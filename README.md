@@ -10,7 +10,7 @@
   - Japan — Top Free / Top Paid
 - Each feed reports source URL, response generation time, source update time when available, per-source success/failure, rank, app name, developer, store link, artwork, and genre coverage.
 - Genre fields missing from Apple RSS are enriched using a batched iTunes Lookup request per country; the UI shows genre coverage and links to both data sources.
-- The manual refresh action bypasses the upstream fetch cache; normal requests use a 15-minute source cache.
+- The reload action requests the latest API response; upstream Apple data is cached for up to 15 minutes to reduce source load and rate-limit risk.
 - Partial source failures remain visible; one failed market does not hide successful feeds.
 - Cache/revalidation target: 15 minutes.
 - Search and market/chart filters operate in the browser.
@@ -44,7 +44,7 @@ npm start
 
 ## Known gaps — not ready for store submission
 
-- CI has passed lint and production build on an earlier commit; rerun it on the latest genre-enrichment and refresh-cache changes before merging.
+- GitHub Actions runs dependency installation, lint, and production build for pull requests. Confirm the run on the exact current PR head is green before merging.
 - There is no persistent historical chart database yet, so the product cannot reliably calculate growth velocity or historical rank changes.
 - There is no review-mining pipeline, keyword-demand source, competitor pricing dataset, or validated willingness-to-pay evidence.
 - No account, cloud-synced watchlist, billing, or user export flow.
