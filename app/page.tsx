@@ -66,11 +66,11 @@ export default function HomePage() {
     createdAt: string;
   }>(null);
 
-  const load = useCallback(async (signal?: AbortSignal, forceRefresh = false) => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(forceRefresh ? "/api/market?refresh=1" : "/api/market", { cache: "no-store", signal });
+      const response = await fetch("/api/market", { cache: "no-store", signal });
       const payload = await response.json() as MarketResponse;
       if (!response.ok && !payload.feeds?.length) throw new Error("市場データを取得できませんでした。時間をおいて再試行してください。");
       setData(payload);
@@ -85,7 +85,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal, refreshKey > 0);
+    void load(controller.signal);
     return () => controller.abort();
   }, [load, refreshKey]);
 
@@ -228,7 +228,7 @@ export default function HomePage() {
 
       <section className="radar-section" id="radar">
         <div className="section-heading">
-          <div><p className="eyebrow">01 / OBSERVE</p><h2>Market radar</h2><p className="section-subtitle">いま公開されているランキングを、国とチャート別に確認。</p></div>
+          <div><p className="eyebrow">01 / OBSERVE</p><h2>Market radar</h2><p className="section-subtitle">いま公開されているランキングを、国とチャート別に確認。外部ソースは最大15分キャッシュされます。</p></div>
           <button className="refresh-button" onClick={() => setRefreshKey((n) => n + 1)} disabled={loading}><span aria-hidden="true">↻</span> {loading ? "取得中…" : "データを更新"}</button>
         </div>
 
