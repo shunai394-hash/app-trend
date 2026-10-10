@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       const response = await fetch(source.url, {
         headers: { accept: "application/json" },
         ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
-        signal: AbortSignal.timeout(4500),
+        signal: AbortSignal.timeout(7000),
       });
       if (!response.ok) throw new Error(`Apple feed returned HTTP ${response.status}`);
       const payload = await response.json() as AppleFeed;
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       const response = await fetch(url, {
         headers: { accept: "application/json" },
         ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
-        signal: AbortSignal.timeout(4500),
+        signal: AbortSignal.timeout(7000),
       });
       if (!response.ok) throw new Error(`iTunes Lookup returned HTTP ${response.status}`);
       const payload = await response.json() as {
