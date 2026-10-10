@@ -290,7 +290,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="footer"><a className="footer-brand" href="#top">↗ app trend</a><span>Early access · Live public chart data</span><span>© App Trend · Evidence before assumptions.</span></footer>
+      <footer className="footer"><a className="footer-brand" href="#top">↗ app trend</a><span>Early access · Live public chart data</span><span className="footer-right"><a href="/privacy">プライバシー</a><span>© App Trend · Evidence before assumptions.</span></span></footer>
     </main>
   );
 }
