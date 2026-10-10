@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -14,7 +15,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <h1>ページを正しく読み込めませんでした。</h1>
       <p>一時的なエラーの可能性があります。再読み込みしても解決しない場合は、少し時間をおいてお試しください。</p>
       <button className="refresh-button" onClick={() => reset()}>もう一度試す ↻</button>
-      <a href="/">トップへ戻る ↗</a>
+      <Link href="/">トップへ戻る ↗</Link>
     </main>
   );
 }
