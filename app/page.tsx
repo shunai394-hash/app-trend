@@ -76,7 +76,7 @@ export default function HomePage() {
       if (cause instanceof Error && cause.name === "AbortError") return;
       setError(cause instanceof Error ? cause.message : "予期しないエラーが発生しました。");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
