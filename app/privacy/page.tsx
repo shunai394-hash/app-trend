@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const metadata = {
   title: "プライバシー | App Trend",
   description: "App Trendのデータ取り扱いとプライバシーについて。",
@@ -6,7 +8,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <main className="legal-shell">
-      <a className="legal-back" href="/">← App Trendへ戻る</a>
+      <Link className="legal-back" href="/">← App Trendへ戻る</Link>
       <p className="eyebrow">POLICY / PRIVACY</p>
       <h1>プライバシーについて</h1>
       <p className="legal-updated">最終更新日：2026年10月11日</p>
