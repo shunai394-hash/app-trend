@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AppItem = {
@@ -22,6 +23,8 @@ type Feed = {
   error?: string;
   apps: AppItem[];
 };
+const EMPTY_FEEDS: Feed[] = [];
+
 type MarketResponse = {
   fetchedAt: string;
   successfulFeeds: number;
@@ -72,7 +75,7 @@ export default function HomePage() {
     return () => controller.abort();
   }, [load, refreshKey]);
 
-  const feeds = data?.feeds ?? [];
+  const feeds = data?.feeds ?? EMPTY_FEEDS;
   const visibleFeeds = useMemo(() => feeds.filter((feed) =>
     (country === "all" || feed.country === country) && feed.chart === chart
   ), [feeds, country, chart]);
@@ -210,7 +213,7 @@ export default function HomePage() {
                     }).map((app) => (
                       <li className="app-row" key={app.id}>
                         <span className="app-rank">{String(app.rank).padStart(2, "0")}</span>
-                        {app.artworkUrl ? <img className="app-artwork" src={app.artworkUrl} alt="" loading="lazy" width="42" height="42" /> : <span className="app-artwork app-artwork-fallback" aria-hidden="true">A</span>}
+                        {app.artworkUrl ? <Image className="app-artwork" src={app.artworkUrl} alt="" loading="lazy" width={42} height={42} unoptimized /> : <span className="app-artwork app-artwork-fallback" aria-hidden="true">A</span>}
                         <div className="app-info"><a href={app.url} target="_blank" rel="noreferrer">{app.name}<span aria-hidden="true"> ↗</span></a><span>{app.developer}</span><div className="genre-list">{app.genres.slice(0, 2).map((genre) => <span key={genre}>{genre}</span>)}</div></div>
                         <span className="rank-label">RANK</span>
                       </li>
