@@ -21,6 +21,9 @@ type Feed = {
   sourceUpdatedAt: string | null;
   status: "ok" | "error";
   error?: string;
+  genreLookupUrl?: string | null;
+  genreLookupStatus?: "ok" | "error" | "skipped";
+  genreCoverage?: { withGenres: number; total: number };
   apps: AppItem[];
 };
 const EMPTY_FEEDS: Feed[] = [];
@@ -259,7 +262,7 @@ export default function HomePage() {
                 <div className="feed-error"><strong>このソースを読み込めませんでした。</strong><p>{feed.error}</p><a href={feed.sourceUrl} target="_blank" rel="noreferrer">ソースを直接確認 ↗</a></div>
               ) : (
                 <>
-                  <div className="feed-meta"><span>{feed.apps.length} apps returned</span><span>Source update: {formatTime(feed.sourceUpdatedAt)}</span></div>
+                  <div className="feed-meta"><span>{feed.apps.length} apps · genres {feed.genreCoverage?.withGenres ?? feed.apps.filter((app) => app.genres.length > 0).length}/{feed.genreCoverage?.total ?? feed.apps.length}</span><span>Source update: {formatTime(feed.sourceUpdatedAt)}</span></div>
                   <ol className="app-list">
                     {feed.apps.filter((app) => {
                       const text = `${app.name} ${app.developer} ${app.genres.join(" ")}`.toLocaleLowerCase();
