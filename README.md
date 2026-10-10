@@ -8,7 +8,9 @@
 - Server route `GET /api/market` retrieves four public Apple App Store charts:
   - United States — Top Free / Top Paid
   - Japan — Top Free / Top Paid
-- Each feed reports source URL, retrieval-check time, source update time when available, per-source success/failure, rank, app name, developer, store link, artwork, and genres.
+- Each feed reports source URL, response generation time, source update time when available, per-source success/failure, rank, app name, developer, store link, artwork, and genre coverage.
+- Genre fields missing from Apple RSS are enriched using a batched iTunes Lookup request per country; the UI shows genre coverage and links to both data sources.
+- The manual refresh action bypasses the upstream fetch cache; normal requests use a 15-minute source cache.
 - Partial source failures remain visible; one failed market does not hide successful feeds.
 - Cache/revalidation target: 15 minutes.
 - Search and market/chart filters operate in the browser.
@@ -38,11 +40,11 @@ npm start
 3. Preserve source URL, source update timestamp when supplied, and local retrieval-check timestamp.
 4. A failed feed must be marked as unavailable, not rendered as an empty market.
 5. Ideas inferred from chart/category differences must be labeled as hypotheses and validated against reviews, search demand, competitors, pricing, and customer interviews.
-6. Respect source terms and usage limits before production-scale collection. The current implementation reads public Apple marketing RSS feeds and links back to App Store listings.
+6. Respect source terms and usage limits before production-scale collection. The current implementation reads Apple Marketing Tools RSS charts and enriches genres with the public iTunes Lookup endpoint; it links back to both sources and App Store listings.
 
 ## Known gaps — not ready for store submission
 
-- This branch has not yet been built or tested in a connected CI environment.
+- CI has passed lint and production build on an earlier commit; rerun it on the latest genre-enrichment and refresh-cache changes before merging.
 - There is no persistent historical chart database yet, so the product cannot reliably calculate growth velocity or historical rank changes.
 - There is no review-mining pipeline, keyword-demand source, competitor pricing dataset, or validated willingness-to-pay evidence.
 - No account, cloud-synced watchlist, billing, or user export flow.
@@ -58,5 +60,5 @@ npm start
 - [ ] Test mobile/desktop keyboard access and screen readers.
 - [ ] Confirm image source policy, rate limits, terms, privacy statement, and hosting logs.
 - [ ] Add historical snapshots and a transparent change-detection model.
-- [ ] Build a hypothesis workflow with source-backed evidence and explicit uncertainty.
+- [ ] Expand the hypothesis workflow with review, keyword-demand, competitor pricing, and willingness-to-pay evidence; current briefs use chart observations plus user-entered assumptions.
 - [ ] Decide web-only vs iOS/Android release target before native packaging.
