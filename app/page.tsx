@@ -229,7 +229,7 @@ export default function HomePage() {
       <section className="radar-section" id="radar">
         <div className="section-heading">
           <div><p className="eyebrow">01 / OBSERVE</p><h2>Market radar</h2><p className="section-subtitle">いま公開されているランキングを、国とチャート別に確認。外部ソースは最大15分キャッシュされます。</p></div>
-          <button className="refresh-button" onClick={() => setRefreshKey((n) => n + 1)} disabled={loading}><span aria-hidden="true">↻</span> {loading ? "取得中…" : "データを更新"}</button>
+          <button className="refresh-button" onClick={() => setRefreshKey((n) => n + 1)} disabled={loading}><span aria-hidden="true">↻</span> {loading ? "取得中…" : "再読み込み"}</button>
         </div>
 
         <div className="control-panel">
