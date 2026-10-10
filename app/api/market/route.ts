@@ -23,14 +23,13 @@ const SOURCES = [
   { country: "jp", countryLabel: "日本", chart: "top-paid", chartLabel: "有料", url: "https://rss.marketingtools.apple.com/api/v2/jp/apps/top-paid/25/apps.json" },
 ] as const;
 
-export async function GET(request: Request) {
-  const forceRefresh = new URL(request.url).searchParams.get("refresh") === "1";
+export async function GET() {
   const fetchedAt = new Date().toISOString();
   const settled = await Promise.all(SOURCES.map(async (source) => {
     try {
       let response = await fetch(source.url, {
         headers: { accept: "application/json" },
-        ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
+        next: { revalidate: 900 },
         signal: AbortSignal.timeout(7000),
       });
       // Retry transient upstream 5xx once without using the cached error response.
@@ -84,7 +83,7 @@ export async function GET(request: Request) {
     try {
       const response = await fetch(url, {
         headers: { accept: "application/json" },
-        ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
+        next: { revalidate: 900 },
         signal: AbortSignal.timeout(7000),
       });
       if (!response.ok) throw new Error(`iTunes Lookup returned HTTP ${response.status}`);
