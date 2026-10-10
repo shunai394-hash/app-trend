@@ -92,6 +92,32 @@ export default function HomePage() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [visibleApps]);
 
+  const crossMarketSignals = useMemo(() => {
+    const usFeed = feeds.find((feed) => feed.country === "us" && feed.chart === chart && feed.status === "ok");
+    const jpFeed = feeds.find((feed) => feed.country === "jp" && feed.chart === chart && feed.status === "ok");
+    const usTotal = usFeed?.apps.length ?? 0;
+    const jpTotal = jpFeed?.apps.length ?? 0;
+    const counts = new Map<string, { us: number; jp: number }>();
+    usFeed?.apps.forEach((app) => app.genres.forEach((genre) => {
+      const item = counts.get(genre) ?? { us: 0, jp: 0 };
+      item.us += 1;
+      counts.set(genre, item);
+    }));
+    jpFeed?.apps.forEach((app) => app.genres.forEach((genre) => {
+      const item = counts.get(genre) ?? { us: 0, jp: 0 };
+      item.jp += 1;
+      counts.set(genre, item);
+    }));
+    return [...counts.entries()].map(([genre, value]) => ({
+      genre,
+      ...value,
+      usShare: usTotal ? value.us / usTotal * 100 : 0,
+      jpShare: jpTotal ? value.jp / jpTotal * 100 : 0,
+      delta: (usTotal ? value.us / usTotal * 100 : 0) - (jpTotal ? value.jp / jpTotal * 100 : 0),
+    })).filter((item) => item.us > 0 || item.jp > 0)
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 6);
+  }, [feeds, chart]);
+
   const availableCountries = country === "all" ? ["us", "jp"] : [country];
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
   const liveCount = visibleFeeds.reduce((sum, feed) => sum + feed.apps.length, 0);
@@ -229,6 +255,30 @@ export default function HomePage() {
             <p className="panel-footnote">これらは調査手順の提案であり、自動的に需要を証明するものではありません。</p>
           </div>
         </div>
+      </section>
+
+      <section className="comparison-section" aria-labelledby="comparison-title">
+        <div className="section-heading">
+          <div><p className="eyebrow">02B / COMPARE MARKETS</p><h2 id="comparison-title">Different charts. Questions worth asking.</h2><p className="section-subtitle">カテゴリがランキング内で占める割合の差を表示します。市場規模・成長率・需要の差を意味するものではありません。</p></div>
+        </div>
+        <div className="comparison-table-wrap">
+          <table className="comparison-table">
+            <thead><tr><th>ジャンル</th><th>米国 Top 25内</th><th>日本 Top 25内</th><th>構成比の差*</th><th>調査の問い</th></tr></thead>
+            <tbody>
+              {crossMarketSignals.map((item) => (
+                <tr key={item.genre}>
+                  <th scope="row">{item.genre}</th>
+                  <td><span className="table-number">{item.us}</span><small>{item.usShare.toFixed(0)}%</small></td>
+                  <td><span className="table-number">{item.jp}</span><small>{item.jpShare.toFixed(0)}%</small></td>
+                  <td><span className={item.delta > 0 ? "delta-value us-delta" : item.delta < 0 ? "delta-value jp-delta" : "delta-value"}>{item.delta > 0 ? "+" : ""}{item.delta.toFixed(1)} pp</span></td>
+                  <td className="question-cell">{item.delta > 0 ? "米国の上位掲載に多い理由は？" : item.delta < 0 ? "日本の上位掲載に多い理由は？" : "両市場で共通する用途は？"}</td>
+                </tr>
+              ))}
+              {crossMarketSignals.length === 0 && <tr><td colSpan={5} className="empty-table">両市場のデータがそろうと比較できます。</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <p className="comparison-disclaimer">* 構成比の差 = 取得できた上位チャート内の掲載数を、各チャートの取得件数で割った値の差。1アプリが複数ジャンルに含まれる場合があります。サンプル数が小さく、これだけで市場機会や収益性は判断できません。</p>
       </section>
 
       <section className="method-section" id="method">
