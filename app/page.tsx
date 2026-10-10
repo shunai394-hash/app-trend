@@ -144,7 +144,7 @@ export default function HomePage() {
     }
     const signal = crossMarketSignals.find((item) => item.genre === hypothesisCategory);
     const sources = feeds
-      .filter((feed) => feed.chart === chart && feed.status === "ok" && (country === "all" || feed.country === country))
+      .filter((feed) => feed.chart === chart && feed.status === "ok")
       .map((feed) => ({ label: `${feed.countryLabel} ${feed.chartLabel}ランキング`, url: feed.sourceUrl, updatedAt: feed.sourceUpdatedAt }));
     const observation = signal
       ? `取得できた${chart === "top-free" ? "無料" : "有料"}チャートでは、${signal.genre}カテゴリが米国 ${signal.us}件 / 日本 ${signal.jp}件。チャート内構成比の差は ${signal.delta > 0 ? "+" : ""}${signal.delta.toFixed(1)}ポイントです。`
