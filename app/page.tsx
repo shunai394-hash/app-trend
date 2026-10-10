@@ -66,11 +66,11 @@ export default function HomePage() {
     createdAt: string;
   }>(null);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const load = useCallback(async (signal?: AbortSignal, forceRefresh = false) => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/market", { cache: "no-store", signal });
+      const response = await fetch(forceRefresh ? "/api/market?refresh=1" : "/api/market", { cache: "no-store", signal });
       const payload = await response.json() as MarketResponse;
       if (!response.ok && !payload.feeds?.length) throw new Error("市場データを取得できませんでした。時間をおいて再試行してください。");
       setData(payload);
@@ -85,7 +85,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    void load(controller.signal, refreshKey > 0);
     return () => controller.abort();
   }, [load, refreshKey]);
 
@@ -248,7 +248,7 @@ export default function HomePage() {
         <div className="data-summary">
           <div><span className="summary-label">VISIBLE LISTINGS</span><strong>{visibleApps.length}</strong><span className="summary-caption">検索・フィルター適用後</span></div>
           <div><span className="summary-label">FEEDS AVAILABLE</span><strong>{successfulVisible}<small> / {visibleFeeds.length}</small></strong><span className="summary-caption">選択した条件のソース</span></div>
-          <div><span className="summary-label">LAST CHECKED</span><strong className="summary-time">{formatTime(data?.fetchedAt)}</strong><span className="summary-caption">取得チェック時刻 · JST</span></div>
+          <div><span className="summary-label">RESPONSE GENERATED</span><strong className="summary-time">{formatTime(data?.fetchedAt)}</strong><span className="summary-caption">レスポンス生成時刻 · JST</span></div>
         </div>
 
         <div className="feed-grid">
@@ -280,7 +280,11 @@ export default function HomePage() {
                     const text = `${app.name} ${app.developer} ${app.genres.join(" ")}`.toLocaleLowerCase();
                     return text.includes(query.trim().toLocaleLowerCase());
                   }).length === 0 && <p className="no-results">一致するアプリはありません。</p>}
-                  <a className="source-link" href={feed.sourceUrl} target="_blank" rel="noreferrer">データソースを開く <span aria-hidden="true">↗</span></a>
+                  <div className="feed-source-links">
+                    <a className="source-link" href={feed.sourceUrl} target="_blank" rel="noreferrer">ランキングの出典 <span aria-hidden="true">↗</span></a>
+                    {feed.genreLookupUrl && <a className="source-link" href={feed.genreLookupUrl} target="_blank" rel="noreferrer">ジャンル情報（iTunes Lookup）<span aria-hidden="true">↗</span></a>}
+                  </div>
+                  {feed.genreLookupStatus === "error" && <p className="genre-warning" role="status">ジャンル情報の補完に失敗しました。ランキング自体の取得状況とは別に、カテゴリ情報が不完全な場合があります。</p>}
                 </>
               )}
             </section>
