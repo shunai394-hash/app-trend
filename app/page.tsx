@@ -51,6 +51,17 @@ export default function HomePage() {
   const [chart, setChart] = useState("top-free");
   const [query, setQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hypothesisCategory, setHypothesisCategory] = useState("");
+  const [hypothesisTarget, setHypothesisTarget] = useState("");
+  const [hypothesisProblem, setHypothesisProblem] = useState("");
+  const [hypothesisPrice, setHypothesisPrice] = useState("月額サブスクリプション");
+  const [hypothesisError, setHypothesisError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+  const [hypothesisBrief, setHypothesisBrief] = useState<null | {
+    category: string; target: string; problem: string; price: string;
+    observation: string; sources: { label: string; url: string; updatedAt: string | null }[];
+    createdAt: string;
+  }>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -122,6 +133,49 @@ export default function HomePage() {
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
   const liveCount = visibleFeeds.reduce((sum, feed) => sum + feed.apps.length, 0);
   const hasAnyFeed = feeds.some((feed) => feed.status === "ok");
+
+  const createHypothesisBrief = () => {
+    const target = hypothesisTarget.trim();
+    const problem = hypothesisProblem.trim();
+    if (!hypothesisCategory || !target || !problem) {
+      setHypothesisError("ジャンル・対象ユーザー・解決したい課題を入力してください。");
+      setHypothesisBrief(null);
+      return;
+    }
+    const signal = crossMarketSignals.find((item) => item.genre === hypothesisCategory);
+    const sources = feeds
+      .filter((feed) => feed.chart === chart && feed.status === "ok" && (country === "all" || feed.country === country))
+      .map((feed) => ({ label: `${feed.countryLabel} ${feed.chartLabel}ランキング`, url: feed.sourceUrl, updatedAt: feed.sourceUpdatedAt }));
+    const observation = signal
+      ? `取得できた${chart === "top-free" ? "無料" : "有料"}チャートでは、${signal.genre}カテゴリが米国 ${signal.us}件 / 日本 ${signal.jp}件。チャート内構成比の差は ${signal.delta > 0 ? "+" : ""}${signal.delta.toFixed(1)}ポイントです。`
+      : "選択ジャンルの比較データが不足しています。チャートでの掲載状況を確認し、追加の根拠を集めてください。";
+    setHypothesisBrief({ category: hypothesisCategory, target, problem, price: hypothesisPrice, observation, sources, createdAt: new Date().toISOString() });
+    setHypothesisError("");
+    setCopyMessage("");
+  };
+
+  const copyHypothesisBrief = async () => {
+    if (!hypothesisBrief) return;
+    const text = [
+      "APP TREND — 仮説検証ブリーフ（未検証）",
+      `ジャンル: ${hypothesisBrief.category}`,
+      `対象ユーザー: ${hypothesisBrief.target}`,
+      `解決したい課題: ${hypothesisBrief.problem}`,
+      `想定収益モデル: ${hypothesisBrief.price}`,
+      `観測データ: ${hypothesisBrief.observation}`,
+      "検証案: 対象ユーザー5〜10人に課題の頻度・現在の代替手段・支払い意思を聞き、簡易LPまたは手動サービスで実際の登録/予約行動を測定する。",
+      "注意: App Storeの掲載順位はダウンロード数・売上・利益の証拠ではありません。このブリーフは仮説であり、成功を保証しません。",
+      "データソース:",
+      ...hypothesisBrief.sources.map((source) => `${source.label}: ${source.url} (ソース更新: ${formatTime(source.updatedAt)})`),
+      `作成時刻: ${formatTime(hypothesisBrief.createdAt)}`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyMessage("ブリーフをコピーしました。");
+    } catch {
+      setCopyMessage("自動コピーできませんでした。下のブリーフ本文を選択してコピーしてください。");
+    }
+  };
 
   return (
     <main className="app-shell">
@@ -279,6 +333,51 @@ export default function HomePage() {
           </table>
         </div>
         <p className="comparison-disclaimer">* 構成比の差 = 取得できた上位チャート内の掲載数を、各チャートの取得件数で割った値の差。1アプリが複数ジャンルに含まれる場合があります。サンプル数が小さく、これだけで市場機会や収益性は判断できません。</p>
+      </section>
+
+      <section className="hypothesis-section" aria-labelledby="hypothesis-title">
+        <div className="section-heading">
+          <div><p className="eyebrow">03 / TURN SIGNALS INTO A TEST</p><h2 id="hypothesis-title">Build a testable hypothesis.</h2><p className="section-subtitle">ランキングの観測とあなたの顧客仮説を組み合わせ、次に行う検証を具体化します。AIの売上予測や需要の証明ではありません。</p></div>
+        </div>
+        <div className="hypothesis-workbench">
+          <div className="hypothesis-form">
+            <div className="workbench-label"><span>RESEARCH WORKBENCH</span><span>HYPOTHESIS / DRAFT</span></div>
+            <label>調査するジャンル
+              <select value={hypothesisCategory} onChange={(event) => setHypothesisCategory(event.target.value)} required>
+                <option value="">ジャンルを選択</option>
+                {[...new Set([...crossMarketSignals.map((item) => item.genre), ...genreSignals.map(([genre]) => genre)])].sort().map((genre) => <option value={genre} key={genre}>{genre}</option>)}
+              </select>
+            </label>
+            <label>対象ユーザー
+              <input value={hypothesisTarget} onChange={(event) => setHypothesisTarget(event.target.value)} placeholder="例：週3回以上オンライン販売を行う個人事業主" maxLength={140} required />
+            </label>
+            <label>解決したい課題
+              <textarea value={hypothesisProblem} onChange={(event) => setHypothesisProblem(event.target.value)} placeholder="例：レビューを読む時間がなく、繰り返し発生する顧客の不満を見逃している" maxLength={500} rows={3} required />
+            </label>
+            <label>検討する収益モデル
+              <select value={hypothesisPrice} onChange={(event) => setHypothesisPrice(event.target.value)}>
+                <option>月額サブスクリプション</option><option>買い切り</option><option>従量課金</option><option>無料 + 有料機能</option><option>法人向けライセンス</option><option>未定・顧客調査で確認</option>
+              </select>
+            </label>
+            {hypothesisError && <p className="form-error" role="alert">{hypothesisError}</p>}
+            <button className="refresh-button workbench-submit" onClick={createHypothesisBrief}>検証ブリーフを作成 ↗</button>
+            <p className="form-footnote">入力内容はこの画面内で処理します。現時点ではアカウントへの保存やクラウド同期はありません。</p>
+          </div>
+          <div className="hypothesis-output" aria-live="polite">
+            {hypothesisBrief ? <>
+              <div className="output-header"><span className="output-status">UNVALIDATED HYPOTHESIS</span><span className="output-date">{formatTime(hypothesisBrief.createdAt)}</span></div>
+              <h3>{hypothesisBrief.category} · {hypothesisBrief.target}</h3>
+              <p className="hypothesis-statement">仮説：<strong>{hypothesisBrief.target}</strong>は「{hypothesisBrief.problem}」という課題を解決できるなら、<strong>{hypothesisBrief.price}</strong>の{hypothesisBrief.category}関連アプリを試す可能性がある。</p>
+              <div className="observation-box"><span>OBSERVED CHART DATA</span><p>{hypothesisBrief.observation}</p></div>
+              <h4>次に行う検証</h4>
+              <ol className="validation-list"><li>対象ユーザー5〜10人に、課題の頻度・現在の代替手段・支払い意思を聞く。</li><li>1つの具体的な解決策を示す簡易LPまたは手動サービスを用意する。</li><li>閲覧数ではなく、登録・予約・有料テストへの参加など実際の行動を測る。</li></ol>
+              <div className="output-sources"><strong>参照した公開チャート</strong>{hypothesisBrief.sources.length ? hypothesisBrief.sources.map((source) => <a href={source.url} key={source.url} target="_blank" rel="noreferrer">{source.label} · ソース更新 {formatTime(source.updatedAt)} ↗</a>) : <span>参照できるソースがありません。市場データの取得状態を確認してください。</span>}</div>
+              <p className="output-disclaimer">このブリーフは未検証の仮説です。ランキングだけでは顧客需要、売上、利益を判断できません。</p>
+              <button className="copy-brief-button" onClick={copyHypothesisBrief}>ブリーフをコピー ↗</button>
+              {copyMessage && <p className="copy-message" role="status">{copyMessage}</p>}
+            </> : <div className="output-empty"><span className="output-empty-icon">↗</span><p className="eyebrow">YOUR NEXT EXPERIMENT</p><h3>観測を、検証できる問いに変える。</h3><p>ジャンルと対象ユーザー、解決したい課題を入力すると、参照元付きの調査ブリーフを作成します。</p><div className="empty-step"><span>01</span>課題の強さを確認する</div><div className="empty-step"><span>02</span>支払い意思を確認する</div><div className="empty-step"><span>03</span>小さな実験で判断する</div></div>}
+          </div>
+        </div>
       </section>
 
       <section className="method-section" id="method">
