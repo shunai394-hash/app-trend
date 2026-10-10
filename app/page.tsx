@@ -30,8 +30,6 @@ type MarketResponse = {
   limitations: string[];
 };
 
-const chartNames: Record<string, string> = { "top-free": "無料", "top-paid": "有料" };
-
 function formatTime(value: string | null | undefined) {
   if (!value) return "取得日時なし";
   const date = new Date(value);
@@ -118,7 +116,6 @@ export default function HomePage() {
       .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 6);
   }, [feeds, chart]);
 
-  const availableCountries = country === "all" ? ["us", "jp"] : [country];
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
   const liveCount = visibleFeeds.reduce((sum, feed) => sum + feed.apps.length, 0);
   const hasAnyFeed = feeds.some((feed) => feed.status === "ok");
