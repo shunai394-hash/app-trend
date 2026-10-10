@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const revalidate = 900;
+export const dynamic = "force-dynamic";
 
 type AppleGenre = { genreId?: string; name?: string; url?: string };
 type AppleApp = {
@@ -23,14 +23,15 @@ const SOURCES = [
   { country: "jp", countryLabel: "日本", chart: "top-paid", chartLabel: "有料", url: "https://rss.marketingtools.apple.com/api/v2/jp/apps/top-paid/25/apps.json" },
 ] as const;
 
-export async function GET() {
+export async function GET(request: Request) {
+  const forceRefresh = new URL(request.url).searchParams.get("refresh") === "1";
   const fetchedAt = new Date().toISOString();
   const settled = await Promise.all(SOURCES.map(async (source) => {
     try {
       const response = await fetch(source.url, {
         headers: { accept: "application/json" },
-        next: { revalidate: 900 },
-        signal: AbortSignal.timeout(8000),
+        ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
+        signal: AbortSignal.timeout(4500),
       });
       if (!response.ok) throw new Error(`Apple feed returned HTTP ${response.status}`);
       const payload = await response.json() as AppleFeed;
@@ -75,8 +76,8 @@ export async function GET() {
     try {
       const response = await fetch(url, {
         headers: { accept: "application/json" },
-        next: { revalidate: 900 },
-        signal: AbortSignal.timeout(8000),
+        ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
+        signal: AbortSignal.timeout(4500),
       });
       if (!response.ok) throw new Error(`iTunes Lookup returned HTTP ${response.status}`);
       const payload = await response.json() as {
@@ -128,7 +129,7 @@ export async function GET() {
     ],
   }, {
     headers: {
-      "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600",
+      "Cache-Control": "no-store",
     },
     status: successfulFeeds === 0 ? 503 : 200,
   });
