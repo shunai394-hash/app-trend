@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
-:root{color-scheme:dark;--bg:#0d1017;--panel:#141a24;--panel-2:#181f2b;--line:#2b3544;--text:#f2f5fb;--muted:#a0adbf;--soft:#818fa3;--mint:#c7fa83;--mint-dark:#15200d;--blue:#a8b8ff;--danger:#ff9a9f;--radius:18px}
+:root{color-scheme:dark;--bg:#0d1017;--panel:#141a24;--panel-2:#181f2b;--line:#2b3544;--text:#f2f5fb;--muted:#a0adbf;--soft:#818fa3;--mint:#c7fa83;--mint-dark:#15200d;--blue:#a8b8ff;--danger:#ff9a9f;--orange:#ffbe7a;--radius:18px}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:24px}
 body{margin:0;background:radial-gradient(ellipse at 9% -12%,#25313d 0,transparent 37%),radial-gradient(ellipse at 96% 28%,#1c2630 0,transparent 30%),var(--bg);color:var(--text);font-family:"DM Sans","Noto Sans JP",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
