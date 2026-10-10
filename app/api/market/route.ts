@@ -63,6 +63,55 @@ export async function GET() {
     }
   }));
 
+  // Apple RSS omits genre metadata for a material share of chart entries.
+  // Enrich missing categories with one batched iTunes Lookup request per country.
+  const genreLookups = await Promise.all(["us", "jp"].map(async (country) => {
+    const countryFeeds = settled.filter((feed) => feed.country === country && feed.status === "ok");
+    const ids = [...new Set(countryFeeds.flatMap((feed) => feed.apps.map((app) => app.id)))];
+    const url = ids.length
+      ? `https://itunes.apple.com/lookup?country=${country}&id=${ids.join(",")}`
+      : null;
+    if (!url) return { country, url, status: "skipped" as const, genresById: new Map<string, string[]>() };
+    try {
+      const response = await fetch(url, {
+        headers: { accept: "application/json" },
+        next: { revalidate: 900 },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) throw new Error(`iTunes Lookup returned HTTP ${response.status}`);
+      const payload = await response.json() as {
+        results?: Array<{ trackId?: number; genres?: string[]; primaryGenreName?: string }>;
+      };
+      const genresById = new Map<string, string[]>();
+      (payload.results ?? []).forEach((item) => {
+        if (item.trackId === undefined) return;
+        const genres = [...new Set([...(item.genres ?? []), ...(item.primaryGenreName ? [item.primaryGenreName] : [])])];
+        genresById.set(String(item.trackId), genres);
+      });
+      return { country, url, status: "ok" as const, genresById };
+    } catch {
+      return { country, url, status: "error" as const, genresById: new Map<string, string[]>() };
+    }
+  }));
+
+  const feedsWithGenreCoverage = settled.map((feed) => {
+    const lookup = genreLookups.find((item) => item.country === feed.country);
+    const apps = feed.apps.map((app) => ({
+      ...app,
+      genres: [...new Set([...app.genres, ...(lookup?.genresById.get(app.id) ?? [])])],
+    }));
+    return {
+      ...feed,
+      genreLookupUrl: lookup?.url ?? null,
+      genreLookupStatus: lookup?.status ?? "skipped",
+      genreCoverage: {
+        withGenres: apps.filter((app) => app.genres.length > 0).length,
+        total: apps.length,
+      },
+      apps,
+    };
+  });
+
   const successfulFeeds = settled.filter((feed) => feed.status === "ok").length;
   return NextResponse.json({
     product: "App Trend",
@@ -71,7 +120,7 @@ export async function GET() {
     refreshIntervalSeconds: 900,
     successfulFeeds,
     totalFeeds: SOURCES.length,
-    feeds: settled,
+    feeds: feedsWithGenreCoverage,
     limitations: [
       "ランキングはApp Storeのチャートであり、ダウンロード数・売上額・利益を示すものではありません。",
       "無料・有料チャートの掲載順位は、将来の需要や事業成功を保証しません。",
