@@ -28,11 +28,19 @@ export async function GET(request: Request) {
   const fetchedAt = new Date().toISOString();
   const settled = await Promise.all(SOURCES.map(async (source) => {
     try {
-      const response = await fetch(source.url, {
+      let response = await fetch(source.url, {
         headers: { accept: "application/json" },
         ...(forceRefresh ? { cache: "no-store" as const } : { next: { revalidate: 900 } }),
         signal: AbortSignal.timeout(7000),
       });
+      // Retry transient upstream 5xx once without using the cached error response.
+      if (response.status >= 500) {
+        response = await fetch(source.url, {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+          signal: AbortSignal.timeout(1500),
+        });
+      }
       if (!response.ok) throw new Error(`Apple feed returned HTTP ${response.status}`);
       const payload = await response.json() as AppleFeed;
       const apps = payload.feed?.results;
