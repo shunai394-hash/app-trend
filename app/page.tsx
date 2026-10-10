@@ -126,11 +126,17 @@ export default function HomePage() {
     return [...counts.entries()].map(([genre, value]) => ({
       genre,
       ...value,
-      usShare: usTotal ? value.us / usTotal * 100 : 0,
-      jpShare: jpTotal ? value.jp / jpTotal * 100 : 0,
-      delta: (usTotal ? value.us / usTotal * 100 : 0) - (jpTotal ? value.jp / jpTotal * 100 : 0),
+      usTotal,
+      jpTotal,
+      usShare: usTotal ? value.us / usTotal * 100 : null,
+      jpShare: jpTotal ? value.jp / jpTotal * 100 : null,
+      delta: usTotal && jpTotal ? (value.us / usTotal * 100) - (value.jp / jpTotal * 100) : null,
     })).filter((item) => item.us > 0 || item.jp > 0)
-      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 6);
+      .sort((a, b) => {
+        if (a.delta === null) return b.delta === null ? 0 : 1;
+        if (b.delta === null) return -1;
+        return Math.abs(b.delta) - Math.abs(a.delta);
+      }).slice(0, 6);
   }, [feeds, chart]);
 
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
@@ -149,9 +155,11 @@ export default function HomePage() {
     const sources = feeds
       .filter((feed) => feed.chart === chart && feed.status === "ok")
       .map((feed) => ({ label: `${feed.countryLabel} ${feed.chartLabel}ランキング`, url: feed.sourceUrl, updatedAt: feed.sourceUpdatedAt }));
-    const observation = signal
+    const observation = signal && signal.delta !== null
       ? `取得できた${chart === "top-free" ? "無料" : "有料"}チャートでは、${signal.genre}カテゴリが米国 ${signal.us}件 / 日本 ${signal.jp}件。チャート内構成比の差は ${signal.delta > 0 ? "+" : ""}${signal.delta.toFixed(1)}ポイントです。`
-      : "選択ジャンルの比較データが不足しています。チャートでの掲載状況を確認し、追加の根拠を集めてください。";
+      : signal
+        ? `${signal.genre}カテゴリの掲載は確認できましたが、米国・日本の両方のチャートがそろっていないため、構成比の差は比較できません。`
+        : "選択ジャンルの比較データが不足しています。チャートでの掲載状況を確認し、追加の根拠を集めてください。";
     setHypothesisBrief({ category: hypothesisCategory, target, problem, price: hypothesisPrice, observation, sources, createdAt: new Date().toISOString() });
     setHypothesisError("");
     setCopyMessage("");
@@ -329,10 +337,10 @@ export default function HomePage() {
               {crossMarketSignals.map((item) => (
                 <tr key={item.genre}>
                   <th scope="row">{item.genre}</th>
-                  <td><span className="table-number">{item.us}</span><small>{item.usShare.toFixed(0)}%</small></td>
-                  <td><span className="table-number">{item.jp}</span><small>{item.jpShare.toFixed(0)}%</small></td>
-                  <td><span className={item.delta > 0 ? "delta-value us-delta" : item.delta < 0 ? "delta-value jp-delta" : "delta-value"}>{item.delta > 0 ? "+" : ""}{item.delta.toFixed(1)} pp</span></td>
-                  <td className="question-cell">{item.delta > 0 ? "米国の上位掲載に多い理由は？" : item.delta < 0 ? "日本の上位掲載に多い理由は？" : "両市場で共通する用途は？"}</td>
+                  <td><span className="table-number">{item.usTotal ? item.us : "—"}</span><small>{item.usShare === null ? "—" : `${item.usShare.toFixed(0)}%`}</small></td>
+                  <td><span className="table-number">{item.jpTotal ? item.jp : "—"}</span><small>{item.jpShare === null ? "—" : `${item.jpShare.toFixed(0)}%`}</small></td>
+                  <td><span className={item.delta !== null && item.delta > 0 ? "delta-value us-delta" : item.delta !== null && item.delta < 0 ? "delta-value jp-delta" : "delta-value"}>{item.delta === null ? "比較不可" : `${item.delta > 0 ? "+" : ""}${item.delta.toFixed(1)} pp`}</span></td>
+                  <td className="question-cell">{item.delta === null ? "片方の市場データが不足しています" : item.delta > 0 ? "米国の上位掲載に多い理由は？" : item.delta < 0 ? "日本の上位掲載に多い理由は？" : "両市場で共通する用途は？"}</td>
                 </tr>
               ))}
               {crossMarketSignals.length === 0 && <tr><td colSpan={5} className="empty-table">両市場のデータがそろうと比較できます。</td></tr>}
