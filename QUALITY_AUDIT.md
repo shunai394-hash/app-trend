@@ -71,3 +71,13 @@ The Webby Awards evaluate websites and apps across content, navigation, visual d
 - Added unit tests for plan structure, B2B price validation, and undecided pricing. CI now runs tests before production build and uses Node 22 to support the repository's native TypeScript test runner.
 - **Verification:** latest branch head `f900eef0cf12b33b62673876a36ee724b8182f16` reached Vercel `READY`; GitHub Actions run [38176035358](https://github.com/shunai394-hash/app-trend/actions/runs/38176035358) passed Lint, Unit tests, and Build. Preview smoke checks returned HTTP 200 for `/`, `/api/market` (4/4 feeds), `/api/history` (zero historical rows), and `/history`. `/api/health` returned 503/degraded in Preview because writer secrets are intentionally not configured there.
 - **Still blocked:** this is a local planning workflow, not actual review mining or measured willingness-to-pay data. No saved cloud workspaces, subscription checkout, global store data, or verified snapshot automation have been added by this pass.
+
+
+## Quality pass 14 — make scheduled automation regression-testable
+
+- **Added:** `scripts/check-cron-config.mjs` verifies that `vercel.json` contains exactly one `/api/cron/snapshot` job at `0 3 * * *` UTC and that the corresponding route exists.
+- **CI change:** GitHub Actions now runs `npm run check:cron` between unit tests and build, so deleting or renaming the scheduled endpoint or changing its schedule unexpectedly fails quality checks.
+- **Why this matters:** the daily snapshot is the foundation for future rank-velocity signals. A configured schedule alone is not evidence that the job executed or that rows were persisted.
+- **Verification still pending for this commit:** wait for GitHub Actions and the new Vercel Preview deployment, then run endpoint smoke checks.
+- **Operational blocker remains:** the latest Supabase inspection still reports zero rows in both `market_snapshot_runs` and `market_snapshots`. Vercel Cron runs only on Production deployments, not Preview deployments ([Vercel Cron quickstart](https://examples.vercel.com/docs/cron-jobs/quickstart)). The current branch's deployment target is Preview and PR #2 is still a draft; do not claim the automated data pipeline is live until a Production deployment is authorized and a successful stored run is observed.
+- **Security follow-up:** Supabase still flags leaked-password protection as disabled. This needs an explicit Auth setting change and verification.
