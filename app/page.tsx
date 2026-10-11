@@ -112,7 +112,12 @@ export default function HomePage() {
               typeof brief.price === "string" &&
               typeof brief.observation === "string" &&
               typeof brief.createdAt === "string" &&
-              Array.isArray(brief.sources)
+              Array.isArray(brief.sources) &&
+              brief.sources.every((source) =>
+                source && typeof source.label === "string" &&
+                typeof source.url === "string" &&
+                (source.updatedAt === null || typeof source.updatedAt === "string")
+              )
             ) setHypothesisBrief(brief as HypothesisBrief);
           }
           setDraftSaveStatus("保存済みの下書きを復元");
