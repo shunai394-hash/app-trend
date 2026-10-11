@@ -12,10 +12,10 @@ Target: improve toward award-level craft; this log is an engineering self-review
 4. **Auth error recovery — IMPROVED.** Added catch/finally handling for sign-in and sign-out network failures so the control does not remain stuck in a busy state.
 5. **Environment naming — IMPROVED.** The history API now accepts the actual Vercel Supabase URL and public-key variable names as fallbacks. This fixes a naming mismatch but does not create history records by itself.
 6. **Data integrity — PASS WITH LIMITS.** UI and API correctly distinguish chart rank from downloads/revenue/profit and preserve per-feed errors. Current snapshot tables contain zero rows, so trend history is not yet proven end-to-end.
-7. **Scheduled ingestion — BLOCKED ON CONFIGURATION.** Cron route checks a bearer secret and requires `SUPABASE_SERVICE_ROLE_KEY`; the current Vercel variable list did not show that key or `CRON_SECRET`. Do not expose the service-role key in browser variables.
+7. **Scheduled ingestion — PARTIALLY CONFIGURED.** Added server-side `SUPABASE_URL` and a sensitive production `CRON_SECRET` in Vercel. The cron route still requires `SUPABASE_SERVICE_ROLE_KEY`, which is not present in the current Vercel variable list. Do not expose the service-role key in browser variables.
 8. **Database access — IMPROVED.** Market snapshots have RLS enabled with public read-only policies appropriate for public chart data. Revoked direct EXECUTE on `public.rls_auto_enable()` from PUBLIC, anon, and authenticated roles after reviewing its SECURITY DEFINER body.
 9. **Responsive/accessibility pass — PASS WITH LIMITS.** Existing CSS includes mobile breakpoints, visible keyboard focus, and reduced-motion handling. The floating login panel can still obscure some content on small screens; manual device/browser testing is required.
-10. **Release/CI pass — IN PROGRESS.** Expanded CI triggers to include pull requests targeting `product/live-market-data-mvp`, because that is the current PR base. Latest Vercel build must finish successfully; CI status and the deployed login/history paths must then be retested.
+10. **Release/CI pass — BUILD PASS; MANUAL END-TO-END TEST STILL REQUIRED.** The exact Google-login PR head passed GitHub Actions install, lint, and production build. The merged product-branch deployment reached Vercel `READY` and the `app-trend-pi.vercel.app` alias was moved to that deployment. Google login had been confirmed by the user before the latest hardening changes; retest login/logout and history after the alias update.
 
 ## Changes made during this audit
 
