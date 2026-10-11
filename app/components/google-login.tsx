@@ -32,6 +32,10 @@ export default function GoogleLogin() {
       if (error) setMessage("ログイン状態を確認できませんでした。再読み込みしてください。");
       setUser(data.session?.user ?? null);
       setReady(true);
+    }).catch(() => {
+      if (!active) return;
+      setMessage("ログイン状態を確認できませんでした。ネットワークを確認して再読み込みしてください。");
+      setReady(true);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -54,12 +58,17 @@ export default function GoogleLogin() {
     }
     setBusy(true);
     setMessage("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      setMessage("Google ログインを開始できませんでした。Supabase の Google 設定と Google Cloud の OAuth 設定を確認してください。");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) {
+        setMessage("Google ログインを開始できませんでした。Supabase の Google 設定と Google Cloud の OAuth 設定を確認してください。");
+        setBusy(false);
+      }
+    } catch {
+      setMessage("Google に接続できませんでした。通信状態を確認して、もう一度お試しください。");
       setBusy(false);
     }
   }
@@ -68,9 +77,14 @@ export default function GoogleLogin() {
     if (!supabase) return;
     setBusy(true);
     setMessage("");
-    const { error } = await supabase.auth.signOut();
-    if (error) setMessage("ログアウトできませんでした。もう一度お試しください。");
-    setBusy(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) setMessage("ログアウトできませんでした。もう一度お試しください。");
+    } catch {
+      setMessage("ログアウト時に通信エラーが発生しました。もう一度お試しください。");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
