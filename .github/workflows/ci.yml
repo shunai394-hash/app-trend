@@ -2,7 +2,7 @@ name: App Trend CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, product/live-market-data-mvp]
   push:
     branches: [main, product/live-market-data-mvp]
 
