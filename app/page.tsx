@@ -266,7 +266,7 @@ export default function HomePage() {
               <button type="button" aria-pressed={chart === "top-paid"} className={chart === "top-paid" ? "selected" : ""} onClick={() => setChart("top-paid")}>有料ランキング</button>
             </div>
           </div>
-          <label className="search-control"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="アプリ名・開発元・カテゴリで絞り込み" aria-label="アプリ名・開発元・カテゴリで絞り込み" /></label>
+          <label className="search-control"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="アプリ名・開発元・カテゴリで絞り込み" aria-label="アプリ名・開発元・カテゴリで絞り込み" />{query && <button type="button" className="search-clear" onClick={() => setQuery("")} aria-label="検索条件をクリア">×</button>}</label>
         </div>
 
         {error && <div className="error-banner" role="alert"><strong>データ取得に注意が必要です</strong><span>{error}</span><button onClick={() => setRefreshKey((n) => n + 1)}>再試行</button></div>}
@@ -340,7 +340,7 @@ export default function HomePage() {
 
       <section className="comparison-section" aria-labelledby="comparison-title">
         <div className="section-heading">
-          <div><p className="eyebrow">02B / COMPARE MARKETS</p><h2 id="comparison-title">Different charts. Questions worth asking.</h2><p className="section-subtitle">カテゴリがランキング内で占める割合の差を表示します。市場規模・成長率・需要の差を意味するものではありません。</p></div>
+          <div><p className="eyebrow">03 / COMPARE MARKETS</p><h2 id="comparison-title">Different charts. Questions worth asking.</h2><p className="section-subtitle">カテゴリがランキング内で占める割合の差を表示します。市場規模・成長率・需要の差を意味するものではありません。</p></div>
         </div>
         <div className="comparison-table-wrap">
           <table className="comparison-table">
@@ -364,7 +364,7 @@ export default function HomePage() {
 
       <section className="hypothesis-section" id="hypothesis" aria-labelledby="hypothesis-title">
         <div className="section-heading">
-          <div><p className="eyebrow">03 / TURN SIGNALS INTO A TEST</p><h2 id="hypothesis-title">Build a testable hypothesis.</h2><p className="section-subtitle">ランキングの観測とあなたの顧客仮説を組み合わせ、次に行う検証を具体化します。AIの売上予測や需要の証明ではありません。</p></div>
+          <div><p className="eyebrow">04 / TURN SIGNALS INTO A TEST</p><h2 id="hypothesis-title">Build a testable hypothesis.</h2><p className="section-subtitle">ランキングの観測とあなたの顧客仮説を組み合わせ、次に行う検証を具体化します。AIの売上予測や需要の証明ではありません。</p></div>
         </div>
         <div className="hypothesis-workbench">
           <div className="hypothesis-form">
@@ -409,7 +409,7 @@ export default function HomePage() {
       </section>
 
       <section className="method-section" id="method">
-        <div className="method-copy"><p className="eyebrow">03 / TRANSPARENCY</p><h2>Fact first.<br /><em>Hypothesis second.</em></h2><p>このMVPは公開ランキングを観測するところから始めます。ランキングだけで「儲かるアプリ」を断定しません。レビュー・検索需要・競合の料金・顧客インタビューを組み合わせて、仮説の確度を上げていきます。</p></div>
+        <div className="method-copy"><p className="eyebrow">05 / TRANSPARENCY</p><h2>Fact first.<br /><em>Hypothesis second.</em></h2><p>このMVPは公開ランキングを観測するところから始めます。ランキングだけで「儲かるアプリ」を断定しません。レビュー・検索需要・競合の料金・顧客インタビューを組み合わせて、仮説の確度を上げていきます。</p></div>
         <div className="method-checklist">
           <div><span className="check-mark">01</span><p><strong>出典を表示</strong><small>ソースURLと取得チェック時刻を表示。各フィードの成功・失敗も分離。</small></p></div>
           <div><span className="check-mark">02</span><p><strong>事実と推測を分離</strong><small>ランキング掲載を収益や需要の証明として扱わない。</small></p></div>
