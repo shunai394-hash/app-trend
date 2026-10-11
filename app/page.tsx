@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { genreSnapshot } from "./lib/compare";
+import { createValidationPlan } from "./lib/validation-plan";
 
 type AppItem = {
   id: string;
@@ -249,6 +250,11 @@ export default function HomePage() {
 
   const copyHypothesisBrief = async () => {
     if (!hypothesisBrief) return;
+    const validationPlan = createValidationPlan({
+      target: hypothesisBrief.target,
+      problem: hypothesisBrief.problem,
+      priceModel: hypothesisBrief.price,
+    });
     const text = [
       "APP TREND — 仮説検証ブリーフ（未検証）",
       `ジャンル: ${hypothesisBrief.category}`,
@@ -256,7 +262,15 @@ export default function HomePage() {
       `解決したい課題: ${hypothesisBrief.problem}`,
       `想定収益モデル: ${hypothesisBrief.price}`,
       `観測データ: ${hypothesisBrief.observation}`,
-      "検証案: 掲載例のレビューと価格を読む。対象ユーザー5〜10人に課題の頻度・代替手段・支払い意思を聞く。簡易LPまたは手動サービスで、閲覧ではなく登録・予約・有料テストへの参加を測る。",
+      "7日間の検証計画:",
+      ...validationPlan.steps.flatMap((step) => [
+        `${step.window} — ${step.title}`,
+        step.action,
+        `確認する証拠: ${step.evidence}`,
+      ]),
+      `価格検証: ${validationPlan.pricingExperiment}`,
+      `暫定判定ルール: ${validationPlan.decisionRule}`,
+      `注意: ${validationPlan.caveat}`,
       "注意: App Storeの掲載順位はダウンロード数・売上・利益の証拠ではありません。このブリーフは仮説であり、成功を保証しません。",
       "データソース:",
       ...hypothesisBrief.sources.map((source) => `${source.label}: ${source.url} (ソース更新: ${formatTime(source.updatedAt)})`),
@@ -478,8 +492,17 @@ export default function HomePage() {
               <h3>{hypothesisBrief.category} · {hypothesisBrief.target}</h3>
               <p className="hypothesis-statement">仮説：<strong>{hypothesisBrief.target}</strong>は「{hypothesisBrief.problem}」という課題を解決できるなら、<strong>{hypothesisBrief.price}</strong>の{hypothesisBrief.category}関連アプリを試す可能性がある。</p>
               <div className="observation-box"><span>OBSERVED CHART DATA</span><p>{hypothesisBrief.observation}</p></div>
-              <h4>次に行う検証</h4>
-              <ol className="validation-list"><li>掲載例のアプリについて、レビューの繰り返し不満と公開価格を読む。順位の高さは需要や売上の証拠にしない。</li><li>対象ユーザー5〜10人に、課題の頻度・現在の代替手段・支払い意思を聞く。</li><li>1つの具体的な解決策を示す簡易LPまたは手動サービスを用意し、閲覧数ではなく登録・予約・有料テストへの参加を測る。</li></ol>
+              <h4>7日間の顧客検証計画</h4>
+              <div className="validation-plan">
+                {createValidationPlan({ target: hypothesisBrief.target, problem: hypothesisBrief.problem, priceModel: hypothesisBrief.price }).steps.map((step) => (
+                  <article className="validation-plan-step" key={step.window}>
+                    <span className="validation-plan-window">{step.window}</span>
+                    <div><h5>{step.title}</h5><p>{step.action}</p><p className="validation-plan-evidence"><strong>確認する証拠：</strong>{step.evidence}</p></div>
+                  </article>
+                ))}
+              </div>
+              <div className="pricing-test-box"><strong>支払い意思の検証</strong><p>{createValidationPlan({ target: hypothesisBrief.target, problem: hypothesisBrief.problem, priceModel: hypothesisBrief.price }).pricingExperiment}</p></div>
+              <div className="decision-rule-box"><strong>続行・見直しの暫定ルール</strong><p>{createValidationPlan({ target: hypothesisBrief.target, problem: hypothesisBrief.problem, priceModel: hypothesisBrief.price }).decisionRule}</p><small>{createValidationPlan({ target: hypothesisBrief.target, problem: hypothesisBrief.problem, priceModel: hypothesisBrief.price }).caveat}</small></div>
               <div className="output-sources"><strong>参照した公開チャート</strong>{hypothesisBrief.sources.length ? hypothesisBrief.sources.map((source) => <a href={source.url} key={source.url} target="_blank" rel="noreferrer">{source.label} · ソース更新 {formatTime(source.updatedAt)} ↗</a>) : <span>参照できるソースがありません。市場データの取得状態を確認してください。</span>}</div>
               <p className="output-disclaimer">このブリーフは未検証の仮説です。ランキングだけでは顧客需要、売上、利益を判断できません。</p>
               <button className="copy-brief-button" onClick={copyHypothesisBrief}>ブリーフをコピー ↗</button>
