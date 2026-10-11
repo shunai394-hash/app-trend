@@ -30,5 +30,7 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm test
+      - name: Verify scheduled automation config
+        run: npm run check:cron
       - name: Build
         run: npm run build
