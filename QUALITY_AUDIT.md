@@ -47,5 +47,15 @@ The Webby Awards evaluate websites and apps across content, navigation, visual d
 - **Fixed:** `GET /api/health` no longer returns a green status just because the Next.js route is running.
 - It now checks the server-only Supabase service credentials, queries the latest snapshot-run record with a bounded timeout, and reports database connectivity, snapshot freshness, latest run status, and recorded app count.
 - It returns HTTP 503 with `degraded` when storage is not configured, the database cannot be reached, no snapshot has been recorded, or the latest run is stale/failed. It never returns secret values.
-- **Verification status:** commit `f670e2128e60ac774168502c83fce2709e56a1fc` and follow-up audit commit `9357ebf8c9cc3defcbf768acb354948ca6ea36ba` built successfully on Vercel (`READY`); GitHub Actions CI passed (run [38175052117](https://github.com/shunai394-hash/app-trend/actions/runs/38175052117)). Runtime smoke tests: `/api/market` HTTP 200 with 4/4 feeds; `/api/history` HTTP 200 but zero rows; `/api/health` HTTP 503/degraded in Preview because server-only writer secrets are intentionally not copied into Preview.
+- **Verification status:** health-check code and audit notes built successfully on Vercel (`READY`); GitHub Actions CI passed for the health-check commit (run [38175052117](https://github.com/shunai394-hash/app-trend/actions/runs/38175052117)). Runtime smoke tests on Preview: `/api/market` HTTP 200 with 4/4 feeds; `/api/history` HTTP 200 but zero rows; `/api/health` HTTP 503/degraded because server-only writer secrets are intentionally not copied into Preview.
 - **Still blocked:** both history tables exist with RLS enabled but have zero rows. Production cron invocation and persisted snapshot writes are not yet proven. Supabase security advisor still flags leaked-password protection as disabled.
+
+
+## Quality pass 12 — protect research from accidental loss
+
+- **Added:** the hypothesis form and generated brief now auto-save to this browser's local storage and restore on return.
+- The UI labels the save state, explains that the data stays in this browser (no server upload or cross-device sync), and offers a clear reset action. Shared-device caution is explicit.
+- Restored brief data is type-checked before rendering; malformed local storage is ignored rather than blindly trusted.
+- Added keyboard-visible focus, touch-sized reset control on mobile, and a restrained destructive-action hover state.
+- **Verification:** Vercel build reached `READY` for commit `8cd09407f52b0b06f89925f18bac93fbce07ca66`. Runtime smoke checks: homepage 200, `/api/market` 200 with 4/4 feeds, `/history` 200. Health correctly reports Preview as degraded because writer secrets are not present there.
+- **Not yet verified:** actual browser interaction / reload restoration, production Cron execution, and persistent rows. A server-rendered fetch cannot prove client-side storage behavior.
