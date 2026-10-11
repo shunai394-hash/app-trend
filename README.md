@@ -14,6 +14,7 @@
 - Partial source failures remain visible; one failed market does not hide successful feeds.
 - Cache/revalidation target: 15 minutes.
 - Search and market/chart filters operate in the browser.
+- Daily rank-history pipeline: Vercel Cron calls a secret-protected snapshot endpoint and records the four chart feeds into Supabase. The `/history` page compares observed first/latest ranks without inventing missing history.
 - Installable web manifest, scalable icon, and a draft privacy disclosure page are included.
 - The existing `index.html` remains as a static fallback/design reference; the Next.js `app/` route is the intended application entry point.
 
@@ -45,11 +46,12 @@ npm start
 ## Known gaps — not ready for store submission
 
 - GitHub Actions runs dependency installation, lint, and production build for pull requests. Confirm the run on the exact current PR head is green before merging.
-- There is no persistent historical chart database yet, so the product cannot reliably calculate growth velocity or historical rank changes.
+- Historical rank storage is implemented but remains inactive until the Supabase migration and Vercel environment variables are configured. Daily snapshots begin only after configuration; no pre-launch history is backfilled.
 - There is no review-mining pipeline, keyword-demand source, competitor pricing dataset, or validated willingness-to-pay evidence.
 - No account, cloud-synced watchlist, billing, or user export flow.
 - A web manifest does not by itself create an App Store / Google Play native app package. Native packaging, icons/screenshots, store metadata, privacy declarations, signing, device tests, and store review remain separate work.
 - The privacy page is a draft; verify the deployed host's logging, retention, analytics, operator contact, and legal requirements before public launch.
+- The scheduled snapshot job requires Vercel Cron support on the selected plan; verify schedule execution in Vercel logs rather than assuming the schedule ran.
 - No real-world market data is included in source files; runtime feed results are fetched from Apple when the app is running.
 
 ## Release checklist
@@ -59,6 +61,7 @@ npm start
 - [ ] Add automated tests for rank parsing, partial failures, and data freshness.
 - [ ] Test mobile/desktop keyboard access and screen readers.
 - [ ] Confirm image source policy, rate limits, terms, privacy statement, and hosting logs.
-- [ ] Add historical snapshots and a transparent change-detection model.
+- [ ] Apply `supabase/migrations/20261011000000_market_snapshots.sql`; configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`; verify the daily cron writes four feed statuses.
+- [ ] Test historical rank calculations against known synthetic snapshots and a partial-feed outage.
 - [ ] Expand the hypothesis workflow with review, keyword-demand, competitor pricing, and willingness-to-pay evidence; current briefs use chart observations plus user-entered assumptions.
 - [ ] Decide web-only vs iOS/Android release target before native packaging.
