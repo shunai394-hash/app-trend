@@ -43,7 +43,7 @@ export async function GET() {
       if (!response.ok) throw new Error(`Apple feed returned HTTP ${response.status}`);
       const payload = await response.json() as AppleFeed;
       const apps = payload.feed?.results;
-      if (!Array.isArray(apps)) throw new Error("Feed format was not recognized");
+      if (!Array.isArray(apps) || apps.length === 0) throw new Error("Feed format was empty or not recognized");
       return {
         ...source,
         sourceUrl: source.url,
