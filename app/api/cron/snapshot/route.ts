@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canonicalizeGenres } from "../../../lib/genres";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
       developer: app.artistName,
       app_url: app.url,
       artwork_url: app.artworkUrl100 ?? null,
-      genres: [...new Set((app.genres ?? []).map((genre) => genre.name).filter((name): name is string => Boolean(name)))],
+      genres: canonicalizeGenres((app.genres ?? []).map((genre) => genre.name).filter((name): name is string => Boolean(name))).labels,
       rank: index + 1,
       source_updated_at: sourceUpdatedAt,
     }));

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canonicalizeGenres } from "../../lib/genres";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,23 +24,40 @@ const SOURCES = [
   { country: "jp", countryLabel: "日本", chart: "top-paid", chartLabel: "有料", url: "https://rss.marketingtools.apple.com/api/v2/jp/apps/top-paid/25/apps.json" },
 ] as const;
 
+function sourceErrorMessage(error: unknown) {
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+    return "ソースの応答が時間内に返りませんでした。";
+  }
+  if (error instanceof Error && error.message.startsWith("Apple feed returned HTTP")) {
+    return `Appleのチャートが${error.message.replace("Apple feed returned HTTP", " HTTP")}を返しました。`;
+  }
+  if (error instanceof Error && error.message === "Feed format was empty or not recognized") {
+    return "チャートの形式を読み取れませんでした。空の市場としては扱いません。";
+  }
+  return "このチャートを取得できませんでした。";
+}
+
+async function fetchAppleFeed(url: string) {
+  const attempt = (timeoutMs: number, revalidate: boolean) => fetch(url, {
+    headers: { accept: "application/json" },
+    cache: revalidate ? undefined : "no-store",
+    next: revalidate ? { revalidate: 900 } : undefined,
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  try {
+    const response = await attempt(12000, true);
+    if (response.status < 500) return response;
+  } catch {
+    // Retry timeouts and network failures once. A short retry hides transient Apple slowness.
+  }
+  return attempt(12000, false);
+}
+
 export async function GET() {
   const fetchedAt = new Date().toISOString();
   const settled = await Promise.all(SOURCES.map(async (source) => {
     try {
-      let response = await fetch(source.url, {
-        headers: { accept: "application/json" },
-        next: { revalidate: 900 },
-        signal: AbortSignal.timeout(7000),
-      });
-      // Retry transient upstream 5xx once without using the cached error response.
-      if (response.status >= 500) {
-        response = await fetch(source.url, {
-          headers: { accept: "application/json" },
-          cache: "no-store",
-          signal: AbortSignal.timeout(1500),
-        });
-      }
+      const response = await fetchAppleFeed(source.url);
       if (!response.ok) throw new Error(`Apple feed returned HTTP ${response.status}`);
       const payload = await response.json() as AppleFeed;
       const apps = payload.feed?.results;
@@ -65,7 +83,7 @@ export async function GET() {
         sourceUrl: source.url,
         sourceUpdatedAt: null,
         status: "error" as const,
-        error: error instanceof Error ? error.message : "Unknown source error",
+        error: sourceErrorMessage(error),
         apps: [],
       };
     }
@@ -104,14 +122,19 @@ export async function GET() {
 
   const feedsWithGenreCoverage = settled.map((feed) => {
     const lookup = genreLookups.find((item) => item.country === feed.country);
-    const apps = feed.apps.map((app) => ({
-      ...app,
-      genres: [...new Set([...app.genres, ...(lookup?.genresById.get(app.id) ?? [])])],
-    }));
+    const failed = feed.status !== "ok";
+    const apps = feed.apps.map((app) => {
+      const canonical = canonicalizeGenres([...app.genres, ...(lookup?.genresById.get(app.id) ?? [])]);
+      return {
+        ...app,
+        genres: canonical.labels,
+        genreAliases: canonical.aliases,
+      };
+    });
     return {
       ...feed,
-      genreLookupUrl: lookup?.url ?? null,
-      genreLookupStatus: lookup?.status ?? "skipped",
+      genreLookupUrl: failed ? null : lookup?.url ?? null,
+      genreLookupStatus: failed ? "skipped" as const : lookup?.status ?? "skipped",
       genreCoverage: {
         withGenres: apps.filter((app) => app.genres.length > 0).length,
         total: apps.length,

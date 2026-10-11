@@ -16,12 +16,25 @@ type Snapshot = {
   rank: number;
 };
 
+type SnapshotRun = {
+  snapshot_day: string;
+  country: "us" | "jp";
+  chart: "top-free" | "top-paid";
+  captured_at: string;
+  status: string;
+  app_count: number | null;
+  error_message: string | null;
+  source_updated_at: string | null;
+};
 type HistoryResponse = {
   status: string;
   message?: string;
   since?: string;
   days?: number;
   count?: number;
+  captureConfigured?: boolean;
+  runsStatus?: "ok" | "unavailable";
+  runs?: SnapshotRun[];
   snapshots: Snapshot[];
 };
 
@@ -83,7 +96,7 @@ export default function HistoryPage() {
       <section className="hero-block">
         <p className="eyebrow">EVIDENCE OVER ASSUMPTION</p>
         <h1>順位の一瞬ではなく、<br />変化を追う。</h1>
-        <p className="hero-copy">日次スナップショットを蓄積し、初回観測と最新観測の順位差を比較します。ランキングはダウンロード数や売上を示すものではありません。</p>
+        <p className="hero-copy">公開チャートの日次スナップショットを蓄積し、初回観測と最新観測の順位差を比較します。ログイン中の調査メモはここには保存されません。ランキングはダウンロード数や売上を示すものではありません。</p>
       </section>
       <section className="filter-panel" aria-label="履歴の絞り込み">
         <label>市場<select value={country} onChange={(event) => setCountry(event.target.value as "us" | "jp")}><option value="jp">日本</option><option value="us">米国</option></select></label>
@@ -91,10 +104,61 @@ export default function HistoryPage() {
         <label>期間<select value={days} onChange={(event) => setDays(event.target.value)}><option value="7">7日</option><option value="30">30日</option><option value="90">90日</option></select></label>
         <button type="button" className="secondary-button" onClick={() => void load()}>再読み込み</button>
       </section>
+      <section className="history-panel" aria-labelledby="snapshot-runs-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">DAILY COLLECTION STATUS</p>
+            <h2 id="snapshot-runs-title">日次データ取得ログ</h2>
+          </div>
+          <span>{data?.runsStatus === "unavailable" ? "ログ未取得" : `${data?.runs?.length ?? 0} records`}</span>
+        </div>
+        {data?.runsStatus === "unavailable" ? (
+          <div className="notice-panel">
+            <strong>取得ログを確認できません</strong>
+            <p>ログ用テーブルのマイグレーション適用状況と、Supabase の読み取り権限を確認してください。ランキング履歴の読み取り結果とは別の状態です。</p>
+          </div>
+        ) : !loading && (data?.runs?.length ?? 0) === 0 ? (
+          <div className="notice-panel">
+            <strong>取得ログはまだありません</strong>
+            <p>定期取得が実行され、ログの保存が成功すると、ここに市場ごとの結果が表示されます。過去の取得結果を推定して作成することはありません。</p>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>市場</th>
+                  <th>チャート</th>
+                  <th>取得日時</th>
+                  <th>結果</th>
+                  <th>件数</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.runs ?? []).map((run, index) => (
+                  <tr key={`${run.snapshot_day}-${run.country}-${run.chart}-${run.captured_at}-${index}`}>
+                    <td>{run.country === "jp" ? "日本" : "米国"}</td>
+                    <td>{run.chart === "top-free" ? "無料" : "有料"}</td>
+                    <td>{new Date(run.captured_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</td>
+                    <td>
+                      <span className={run.status === "ok" ? "history-up" : "history-down"}>
+                        {run.status === "ok" ? "成功" : "失敗"}
+                      </span>
+                      {run.error_message && <small>{run.error_message}</small>}
+                    </td>
+                    <td>{run.app_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <section className="history-panel" aria-live="polite">
         <div className="section-heading"><div><p className="eyebrow">RANK MOVEMENT</p><h2>順位変動の観測</h2></div><span>{loading ? "取得中…" : `${data?.count ?? 0} observations`}</span></div>
         {error ? <div className="notice-panel"><strong>履歴ストレージを利用できません</strong><p>{error}</p><p>必要な設定：SUPABASE_URL、SUPABASE_ANON_KEY、SUPABASE_SERVICE_ROLE_KEY、CRON_SECRET。DBマイグレーション適用後、日次記録が始まります。</p></div> :
-          !loading && appRows.length === 0 ? <div className="notice-panel"><strong>まだ履歴がありません</strong><p>最初の定期取得が成功すると、ここに順位変動が表示されます。履歴は過去の値を推定して埋めません。</p></div> :
+          !loading && appRows.length === 0 ? <div className="notice-panel"><strong>{data?.captureConfigured === false ? "順位の記録はまだ始まっていません" : "まだ履歴がありません"}</strong><p>{data?.captureConfigured === false ? "定期保存の設定が未完了です。待っても、この画面に順位はたまりません。過去の順位を推定して埋めることもありません。" : "最初の定期取得が成功すると、ここに順位変動が表示されます。履歴は過去の値を推定して埋めません。"}</p></div> :
           <div className="table-scroll"><table className="history-table"><thead><tr><th>アプリ</th><th>初回順位</th><th>最新順位</th><th>順位差*</th><th>観測回数</th></tr></thead><tbody>
             {appRows.map((row) => <tr key={row.id}><td><a href={row.latest.app_url} target="_blank" rel="noreferrer">{row.latest.app_name}</a><small>{row.latest.developer} · {row.latest.genres.join(", ") || "ジャンル未確認"}</small></td><td>#{row.first.rank}<small>{row.first.snapshot_day}</small></td><td>#{row.latest.rank}<small>{row.latest.snapshot_day}</small></td><td><span className={row.change > 0 ? "history-up" : row.change < 0 ? "history-down" : "history-flat"}>{row.change > 0 ? `↑ ${row.change}` : row.change < 0 ? `↓ ${Math.abs(row.change)}` : "± 0"}</span></td><td>{row.observations}</td></tr>)}
           </tbody></table></div>}

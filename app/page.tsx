@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { genreSnapshot } from "./lib/compare";
 
 type AppItem = {
   id: string;
@@ -11,6 +12,7 @@ type AppItem = {
   url: string;
   artworkUrl: string | null;
   genres: string[];
+  genreAliases?: string[];
 };
 type Feed = {
   country: string;
@@ -35,6 +37,13 @@ type MarketResponse = {
   feeds: Feed[];
   limitations: string[];
 };
+
+function matchesQuery(app: Pick<AppItem, "name" | "developer" | "genres" | "genreAliases">, query: string) {
+  const needle = query.trim().toLocaleLowerCase();
+  if (!needle) return true;
+  const text = `${app.name} ${app.developer} ${app.genres.join(" ")} ${(app.genreAliases ?? []).join(" ")}`.toLocaleLowerCase();
+  return text.includes(needle);
+}
 
 function formatTime(value: string | null | undefined) {
   if (!value) return "取得日時なし";
@@ -96,10 +105,7 @@ export default function HomePage() {
   ), [feeds, country, chart]);
 
   const visibleApps = useMemo(() => visibleFeeds.flatMap((feed) =>
-    feed.apps.filter((app) => {
-      const text = `${app.name} ${app.developer} ${app.genres.join(" ")}`.toLocaleLowerCase();
-      return text.includes(query.trim().toLocaleLowerCase());
-    }).map((app) => ({ ...app, country: feed.country, countryLabel: feed.countryLabel, chartLabel: feed.chartLabel, sourceUrl: feed.sourceUrl, sourceUpdatedAt: feed.sourceUpdatedAt, feedStatus: feed.status }))
+    feed.apps.filter((app) => matchesQuery(app, query)).map((app) => ({ ...app, country: feed.country, countryLabel: feed.countryLabel, chartLabel: feed.chartLabel, sourceUrl: feed.sourceUrl, sourceUpdatedAt: feed.sourceUpdatedAt, feedStatus: feed.status }))
   ), [visibleFeeds, query]);
 
   const genreSignals = useMemo(() => {
@@ -152,15 +158,17 @@ export default function HomePage() {
       setHypothesisBrief(null);
       return;
     }
-    const signal = crossMarketSignals.find((item) => item.genre === hypothesisCategory);
+    const signal = genreSnapshot(feeds, chart, hypothesisCategory);
     const sources = feeds
       .filter((feed) => feed.chart === chart && feed.status === "ok")
       .map((feed) => ({ label: `${feed.countryLabel} ${feed.chartLabel}ランキング`, url: feed.sourceUrl, updatedAt: feed.sourceUpdatedAt }));
-    const observation = signal && signal.delta !== null
-      ? `取得できた${chart === "top-free" ? "無料" : "有料"}チャートでは、${signal.genre}カテゴリが米国 ${signal.us}件 / 日本 ${signal.jp}件。チャート内構成比の差は ${signal.delta > 0 ? "+" : ""}${signal.delta.toFixed(1)}ポイントです。`
-      : signal
-        ? `${signal.genre}カテゴリの掲載は確認できましたが、米国・日本の両方のチャートがそろっていないため、構成比の差は比較できません。`
-        : "選択ジャンルの比較データが不足しています。チャートでの掲載状況を確認し、追加の根拠を集めてください。";
+    const exampleLine = (label: string, item: { examples: string[] } | null) => item
+      ? item.examples.length ? `${label}の掲載例: ${item.examples.join("、")}。` : `${label}の取得済み上位チャートに、このジャンルの掲載はありません。`
+      : `${label}のこのチャートは取得できていません。`;
+    const counts = signal.us && signal.jp
+      ? `取得できた${chart === "top-free" ? "無料" : "有料"}チャートの上位では、${hypothesisCategory}が米国 ${signal.us.count}件 / 日本 ${signal.jp.count}件。チャート内構成比の差は ${signal.delta !== null && signal.delta > 0 ? "+" : ""}${signal.delta === null ? "比較不可" : `${signal.delta.toFixed(1)}ポイント`}です。`
+      : `${hypothesisCategory}の掲載は確認できましたが、米国・日本の両方のチャートがそろっていないため、構成比の差は比較できません。`;
+    const observation = `${counts}${exampleLine("米国", signal.us)}${exampleLine("日本", signal.jp)}掲載例は上位チャートでの観測であり、売上・シェア・競合の強さの証明ではありません。サンプルは各チャート最大25件です。`;
     setHypothesisBrief({ category: hypothesisCategory, target, problem, price: hypothesisPrice, observation, sources, createdAt: new Date().toISOString() });
     setHypothesisError("");
     setCopyMessage("");
@@ -176,7 +184,7 @@ export default function HomePage() {
       `解決したい課題: ${hypothesisBrief.problem}`,
       `想定収益モデル: ${hypothesisBrief.price}`,
       `観測データ: ${hypothesisBrief.observation}`,
-      "検証案: 対象ユーザー5〜10人に課題の頻度・現在の代替手段・支払い意思を聞き、簡易LPまたは手動サービスで実際の登録/予約行動を測定する。",
+      "検証案: 掲載例のレビューと価格を読む。対象ユーザー5〜10人に課題の頻度・代替手段・支払い意思を聞く。簡易LPまたは手動サービスで、閲覧ではなく登録・予約・有料テストへの参加を測る。",
       "注意: App Storeの掲載順位はダウンロード数・売上・利益の証拠ではありません。このブリーフは仮説であり、成功を保証しません。",
       "データソース:",
       ...hypothesisBrief.sources.map((source) => `${source.label}: ${source.url} (ソース更新: ${formatTime(source.updatedAt)})`),
@@ -200,10 +208,11 @@ export default function HomePage() {
           <span><strong>app trend</strong><small>FIND WHAT TO BUILD NEXT</small></span>
         </a>
         <nav className="topnav" aria-label="ページ内ナビゲーション">
-          <a className="nav-current" href="#radar">Market radar</a>
-          <a href="#signals">Signals</a>
-          <a href="#method">Methodology</a>
-          <a href="/history">Rank history</a>
+          <a href="#radar">チャート</a>
+          <a href="#signals">分布</a>
+          <a href="#hypothesis">検証</a>
+          <a href="#method">方法</a>
+          <a href="/history">順位の記録</a>
         </nav>
         <span className={data && successfulFeeds === data.totalFeeds ? "status-pill is-live" : "status-pill"} aria-live="polite" aria-label={`データソース状態：${feedStatusLabel}`}>
           <span className="status-dot" />{feedStatusLabel}
@@ -214,7 +223,11 @@ export default function HomePage() {
         <div className="hero-copy">
           <p className="eyebrow"><span className="eyebrow-line" /> MARKET INTELLIGENCE / EARLY ACCESS</p>
           <h1>次に作るアプリを、<br /><em>勘ではなく根拠から。</em></h1>
-          <p className="hero-lede">米国と日本のApp Storeチャートを同じ視点で比較。市場で見つかる事実と、これから検証すべき仮説を分けて、次の一手を考えます。</p>
+          <p className="hero-lede">アプリを企画・開発する人向け。米国と日本のApp Storeチャートを同じ視点で比較し、見えている事実と、次に検証すべき仮説を分けます。ランキングサイトではなく、作る前の調査と判断を進めるための画面です。</p>
+          <div className="hero-actions">
+            <a className="primary" href="#radar">公開チャートを見る</a>
+            <a className="secondary" href="#hypothesis">検証ブリーフを作る</a>
+          </div>
           <div className="hero-proof"><span>01 / Public chart data</span><span>02 / US × Japan</span><span>03 / Evidence first</span></div>
         </div>
         <div className="hero-card">
@@ -253,7 +266,7 @@ export default function HomePage() {
               <button type="button" aria-pressed={chart === "top-paid"} className={chart === "top-paid" ? "selected" : ""} onClick={() => setChart("top-paid")}>有料ランキング</button>
             </div>
           </div>
-          <label className="search-control"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="アプリ名・開発元・カテゴリを検索" aria-label="アプリ名・開発元・カテゴリを検索" /><kbd>検索</kbd></label>
+          <label className="search-control"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="アプリ名・開発元・カテゴリで絞り込み" aria-label="アプリ名・開発元・カテゴリで絞り込み" /></label>
         </div>
 
         {error && <div className="error-banner" role="alert"><strong>データ取得に注意が必要です</strong><span>{error}</span><button onClick={() => setRefreshKey((n) => n + 1)}>再試行</button></div>}
@@ -277,10 +290,7 @@ export default function HomePage() {
                 <>
                   <div className="feed-meta"><span>{feed.apps.length} apps · genres {feed.genreCoverage?.withGenres ?? feed.apps.filter((app) => app.genres.length > 0).length}/{feed.genreCoverage?.total ?? feed.apps.length}</span><span>Source update: {formatTime(feed.sourceUpdatedAt)}</span></div>
                   <ol className="app-list">
-                    {feed.apps.filter((app) => {
-                      const text = `${app.name} ${app.developer} ${app.genres.join(" ")}`.toLocaleLowerCase();
-                      return text.includes(query.trim().toLocaleLowerCase());
-                    }).map((app) => (
+                    {feed.apps.filter((app) => matchesQuery(app, query)).map((app) => (
                       <li className="app-row" key={app.id}>
                         <span className="app-rank">{String(app.rank).padStart(2, "0")}</span>
                         {app.artworkUrl ? <Image className="app-artwork" src={app.artworkUrl} alt="" loading="lazy" width={42} height={42} unoptimized /> : <span className="app-artwork app-artwork-fallback" aria-hidden="true">A</span>}
@@ -289,10 +299,7 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ol>
-                  {feed.apps.filter((app) => {
-                    const text = `${app.name} ${app.developer} ${app.genres.join(" ")}`.toLocaleLowerCase();
-                    return text.includes(query.trim().toLocaleLowerCase());
-                  }).length === 0 && <p className="no-results">一致するアプリはありません。</p>}
+                  {feed.apps.filter((app) => matchesQuery(app, query)).length === 0 && <p className="no-results">一致するアプリはありません。語を短くするか、国とチャートを切り替えてください。</p>}
                   <div className="feed-source-links">
                     <a className="source-link" href={feed.sourceUrl} target="_blank" rel="noreferrer">ランキングの出典 <span aria-hidden="true">↗</span></a>
                     {feed.genreLookupUrl && <a className="source-link" href={feed.genreLookupUrl} target="_blank" rel="noreferrer">ジャンル情報（iTunes Lookup）<span aria-hidden="true">↗</span></a>}
@@ -355,7 +362,7 @@ export default function HomePage() {
         <p className="comparison-disclaimer">* 構成比の差 = 取得できた上位チャート内の掲載数を、各チャートの取得件数で割った値の差。1アプリが複数ジャンルに含まれる場合があります。サンプル数が小さく、これだけで市場機会や収益性は判断できません。</p>
       </section>
 
-      <section className="hypothesis-section" aria-labelledby="hypothesis-title">
+      <section className="hypothesis-section" id="hypothesis" aria-labelledby="hypothesis-title">
         <div className="section-heading">
           <div><p className="eyebrow">03 / TURN SIGNALS INTO A TEST</p><h2 id="hypothesis-title">Build a testable hypothesis.</h2><p className="section-subtitle">ランキングの観測とあなたの顧客仮説を組み合わせ、次に行う検証を具体化します。AIの売上予測や需要の証明ではありません。</p></div>
         </div>
@@ -390,7 +397,7 @@ export default function HomePage() {
               <p className="hypothesis-statement">仮説：<strong>{hypothesisBrief.target}</strong>は「{hypothesisBrief.problem}」という課題を解決できるなら、<strong>{hypothesisBrief.price}</strong>の{hypothesisBrief.category}関連アプリを試す可能性がある。</p>
               <div className="observation-box"><span>OBSERVED CHART DATA</span><p>{hypothesisBrief.observation}</p></div>
               <h4>次に行う検証</h4>
-              <ol className="validation-list"><li>対象ユーザー5〜10人に、課題の頻度・現在の代替手段・支払い意思を聞く。</li><li>1つの具体的な解決策を示す簡易LPまたは手動サービスを用意する。</li><li>閲覧数ではなく、登録・予約・有料テストへの参加など実際の行動を測る。</li></ol>
+              <ol className="validation-list"><li>掲載例のアプリについて、レビューの繰り返し不満と公開価格を読む。順位の高さは需要や売上の証拠にしない。</li><li>対象ユーザー5〜10人に、課題の頻度・現在の代替手段・支払い意思を聞く。</li><li>1つの具体的な解決策を示す簡易LPまたは手動サービスを用意し、閲覧数ではなく登録・予約・有料テストへの参加を測る。</li></ol>
               <div className="output-sources"><strong>参照した公開チャート</strong>{hypothesisBrief.sources.length ? hypothesisBrief.sources.map((source) => <a href={source.url} key={source.url} target="_blank" rel="noreferrer">{source.label} · ソース更新 {formatTime(source.updatedAt)} ↗</a>) : <span>参照できるソースがありません。市場データの取得状態を確認してください。</span>}</div>
               <p className="output-disclaimer">このブリーフは未検証の仮説です。ランキングだけでは顧客需要、売上、利益を判断できません。</p>
               <button className="copy-brief-button" onClick={copyHypothesisBrief}>ブリーフをコピー ↗</button>

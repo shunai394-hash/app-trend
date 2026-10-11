@@ -8,6 +8,7 @@ export default function GoogleLogin() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
 
   const supabase = useMemo<SupabaseClient | null>(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -95,13 +96,12 @@ export default function GoogleLogin() {
         zIndex: 100,
         right: "max(18px, env(safe-area-inset-right))",
         bottom: "max(18px, env(safe-area-inset-bottom))",
-        width: "min(250px, calc(100vw - 28px))",
-        padding: 9,
-        border: "1px solid #394557",
+        width: open || user ? "min(280px, calc(100vw - 28px))" : "auto",
+        padding: open || user ? 12 : 0,
+        border: open || user ? "1px solid #394557" : "0",
         borderRadius: 16,
-        background: "rgba(17, 23, 32, 0.96)",
-        boxShadow: "0 16px 50px rgba(0,0,0,.35)",
-        backdropFilter: "blur(14px)",
+        background: open || user ? "rgba(17, 23, 32, 0.96)" : "transparent",
+        boxShadow: open || user ? "0 16px 50px rgba(0,0,0,.35)" : "none",
         color: "#f2f5fb",
       }}
     >
@@ -124,8 +124,11 @@ export default function GoogleLogin() {
             {busy ? "処理中…" : "ログアウト"}
           </button>
         </div>
-      ) : (
+      ) : open ? (
         <div>
+          <p style={{ margin: "0 0 8px", color: "#a0adbf", fontSize: 11, lineHeight: 1.6 }}>
+            任意です。ログインしても、調査ブリーフの保存はまだできません。
+          </p>
           <button
             type="button"
             onClick={signIn}
@@ -135,7 +138,18 @@ export default function GoogleLogin() {
             <GoogleMark />
             {busy ? "Google に接続中…" : "Google でログイン"}
           </button>
+          <button type="button" onClick={() => setOpen(false)} style={{ ...secondaryButton, width: "100%", marginTop: 8 }}>
+            閉じる
+          </button>
         </div>
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} aria-expanded={open} style={{ ...primaryButton, width: "auto", padding: "0 14px" }}>
+          <GoogleMark />
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
+            <span>ログイン</span>
+            <span style={{ fontSize: 9, fontWeight: 650 }}>調査の保存は未対応</span>
+          </span>
+        </button>
       )}
       {message && (
         <p role="status" style={{ margin: "9px 0 0", color: "#ffbe7a", fontSize: 10, lineHeight: 1.6 }}>
