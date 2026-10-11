@@ -1,35 +1,42 @@
 # App Trend — Quality Audit Log
 
-Date: 2026-10-11
-Branch: `feat/google-login`
-Target: improve toward award-level craft; this log is an engineering self-review, not a claim of an award or independent validation.
+Date: 2026-10-11  
+Branch: `product/live-market-data-mvp`  
+Target: raise product craft toward Awwwards / Webby Awards / FWA standards. This is a self-audit, not a claim of award-level readiness or independent validation.
 
-## Ten review passes
+## Follow-up audit — 10 rounds
 
-1. **Primary journey — PASS WITH LIMITS.** The homepage is the research entry point and the user confirmed Google sign-in works. The product still needs a clearer post-login next action and a saved-workflow benefit.
-2. **OAuth wiring — PASS.** The browser uses Supabase Auth; Google credentials remain in the Supabase provider configuration rather than being embedded in client code.
-3. **Session lifecycle — PASS.** The UI checks the existing session and subscribes to auth state changes. Added a catch path for session lookup network failures.
-4. **Auth error recovery — IMPROVED.** Added catch/finally handling for sign-in and sign-out network failures so the control does not remain stuck in a busy state.
-5. **Environment naming — IMPROVED.** The history API now accepts the actual Vercel Supabase URL and public-key variable names as fallbacks. This fixes a naming mismatch but does not create history records by itself.
-6. **Data integrity — PASS WITH LIMITS.** UI and API correctly distinguish chart rank from downloads/revenue/profit and preserve per-feed errors. Current snapshot tables contain zero rows, so trend history is not yet proven end-to-end.
-7. **Scheduled ingestion — PARTIALLY CONFIGURED.** Added server-side `SUPABASE_URL` and a sensitive production `CRON_SECRET` in Vercel. The cron route still requires `SUPABASE_SERVICE_ROLE_KEY`, which is not present in the current Vercel variable list. Do not expose the service-role key in browser variables.
-8. **Database access — IMPROVED.** Market snapshots have RLS enabled with public read-only policies appropriate for public chart data. Revoked direct EXECUTE on `public.rls_auto_enable()` from PUBLIC, anon, and authenticated roles after reviewing its SECURITY DEFINER body.
-9. **Responsive/accessibility pass — PASS WITH LIMITS.** Existing CSS includes mobile breakpoints, visible keyboard focus, and reduced-motion handling. The floating login panel can still obscure some content on small screens; manual device/browser testing is required.
-10. **Release/CI pass — BUILD PASS; MANUAL END-TO-END TEST STILL REQUIRED.** The exact Google-login PR head passed GitHub Actions install, lint, and production build. The merged product-branch deployment reached Vercel `READY` and the `app-trend-pi.vercel.app` alias was moved to that deployment. Google login had been confirmed by the user before the latest hardening changes; retest login/logout and history after the alias update.
+1. **Product promise and journey — HOLD.** The main proposition is clear: compare US/Japan public App Store charts, then form a testable app hypothesis. The logged-in experience still has no saved research or cloud sync, so the benefit of creating an account is not yet strong.
+2. **Data honesty — PASS WITH LIMITS.** The interface explicitly says chart rank is not downloads, revenue, profit, or proof of demand. The current feed is Apple Top Free/Top Paid, 25 apps per country/chart; it is a starting signal, not a complete market-research engine.
+3. **Partial-source status — FIXED.** The header no longer says “LIVE SOURCE” when only some feeds succeed. It now distinguishes `ALL SOURCES`, `PARTIAL DATA`, `SOURCE CHECK`, and `CHECKING SOURCES`, with a polite live announcement for assistive technology.
+4. **Search empty state — FIXED.** A search with zero matching apps now gives a search-specific message instead of incorrectly implying the market feed itself is empty.
+5. **Hypothesis quality — PASS WITH LIMITS.** The brief keeps observation and hypothesis separate, links source feeds, and proposes customer interviews plus a small validation experiment. It does not yet include app-review mining, search-demand data, competitor pricing, or validated willingness-to-pay evidence.
+6. **Clipboard failure recovery — FIXED.** If browser clipboard access is denied, the full brief is exposed in a readable, selectable text area with visible keyboard focus styling.
+7. **Filter accessibility — IMPROVED.** Country and chart selectors expose their selected state using `aria-pressed`. Automated accessibility scanning and a real screen-reader pass are still outstanding.
+8. **Mobile obstruction — IMPROVED, NOT VERIFIED.** The persistent login panel was reduced from 340px to 250px and its redundant heading removed. Test on actual narrow viewports before calling the mobile experience finished.
+9. **History pipeline and security — BLOCKED.** Both `market_snapshot_runs` and `market_snapshots` currently have zero rows. Vercel still needs server-only `SUPABASE_SERVICE_ROLE_KEY`; the scheduled snapshot has not been proven end-to-end. Supabase also reports leaked-password protection disabled.
+10. **CI, deployment, and release — BUILD PASS; MANUAL E2E PENDING.** Commit `fa30720bf0df7965cb314f4118b44a30c94e1aca` passed GitHub Actions install, lint, and build (run [38137703854](https://github.com/shunai394-hash/app-trend/actions/runs/38137703854)). Vercel deployment `dpl_54ZbDTshjEHBHffuNDuZ2SbDasYC` reached `READY`, and `app-trend-pi.vercel.app` was reassigned to it. Its Vercel target is still `null` (preview), not a confirmed Production target. Browser login/logout, session persistence, responsive layout, and history must still be checked manually.
 
-## Changes made during this audit
+## Changes made in this follow-up
 
-- Fixed Supabase environment-variable fallback in `app/api/history/route.ts`.
-- Added network error handling to Google auth controls.
-- Expanded CI pull-request triggers to the active product branch.
-- Restricted direct execution of the SECURITY DEFINER RLS helper function.
+- Corrected market-source status when only a subset of feeds is available.
+- Added a relevant empty state when a search has no matches.
+- Added a selectable full-text fallback when clipboard access fails.
+- Added `aria-pressed` to country and chart filter buttons.
+- Reduced the floating login panel's footprint on desktop and mobile.
+- Verified the latest code commit with GitHub Actions install, lint, and production build.
+- Reassigned the public alias to the latest code deployment after it reached `READY`.
 
-## Open release blockers
+## Release blockers and next checks
 
-- Wait for the latest Vercel deployment and verify it is READY.
-- Confirm the current PR checks run and pass on the exact head commit.
-- Configure server-only `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` in Vercel before expecting the daily snapshot job to write data.
-- Trigger the snapshot route safely and verify four feed statuses and non-zero stored snapshots.
-- Test mobile layout, keyboard-only navigation, login/logout, refresh/session persistence, and `/history` on the deployed site.
-- Enable Supabase leaked-password protection in Auth settings (current advisor warning).
-- Conduct an independent third-party review after these checks; this self-review is not a substitute for it.
+- Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel as a server-only sensitive environment variable. Never use a `NEXT_PUBLIC_` name for it.
+- Trigger the snapshot route with the configured secret; verify all four feed statuses and non-zero stored snapshots in both tables.
+- Enable Supabase leaked-password protection in Auth settings: [remediation guide](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- Manually test Google login/logout, refresh/session persistence, partial source failure, empty search, clipboard fallback, keyboard-only navigation, mobile layouts, and `/history`.
+- Add persistent saved briefs so login has a clear user benefit.
+- Broaden evidence beyond rankings: app reviews, search intent, competitor pricing, user pain, and willingness-to-pay validation.
+- Run an independent review and fix findings before claiming submission or award readiness.
+
+## Standard used
+
+The Webby Awards evaluate websites and apps across content, navigation, visual design, functionality, interactivity, innovation, and overall experience. A polished visual layer alone is not sufficient. This log tracks engineering findings and remaining evidence gaps; it does not certify award readiness.
