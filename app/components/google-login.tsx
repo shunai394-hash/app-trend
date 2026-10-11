@@ -95,8 +95,8 @@ export default function GoogleLogin() {
         zIndex: 100,
         right: "max(18px, env(safe-area-inset-right))",
         bottom: "max(18px, env(safe-area-inset-bottom))",
-        width: "min(340px, calc(100vw - 28px))",
-        padding: 12,
+        width: "min(250px, calc(100vw - 28px))",
+        padding: 9,
         border: "1px solid #394557",
         borderRadius: 16,
         background: "rgba(17, 23, 32, 0.96)",
@@ -126,7 +126,6 @@ export default function GoogleLogin() {
         </div>
       ) : (
         <div>
-          <p style={{ margin: "0 0 9px", fontSize: 12, fontWeight: 700 }}>App Trend にログイン</p>
           <button
             type="button"
             onClick={signIn}
