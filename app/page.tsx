@@ -60,6 +60,7 @@ export default function HomePage() {
   const [hypothesisPrice, setHypothesisPrice] = useState("月額サブスクリプション");
   const [hypothesisError, setHypothesisError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [copyFallback, setCopyFallback] = useState("");
   const [hypothesisBrief, setHypothesisBrief] = useState<null | {
     category: string; target: string; problem: string; price: string;
     observation: string; sources: { label: string; url: string; updatedAt: string | null }[];
@@ -163,6 +164,7 @@ export default function HomePage() {
     setHypothesisBrief({ category: hypothesisCategory, target, problem, price: hypothesisPrice, observation, sources, createdAt: new Date().toISOString() });
     setHypothesisError("");
     setCopyMessage("");
+    setCopyFallback("");
   };
 
   const copyHypothesisBrief = async () => {
@@ -182,9 +184,11 @@ export default function HomePage() {
     ].join("\n");
     try {
       await navigator.clipboard.writeText(text);
+      setCopyFallback("");
       setCopyMessage("ブリーフをコピーしました。");
     } catch {
-      setCopyMessage("自動コピーできませんでした。下のブリーフ本文を選択してコピーしてください。");
+      setCopyFallback(text);
+      setCopyMessage("自動コピーできませんでした。下のテキスト欄からコピーしてください。");
     }
   };
 
@@ -391,6 +395,7 @@ export default function HomePage() {
               <p className="output-disclaimer">このブリーフは未検証の仮説です。ランキングだけでは顧客需要、売上、利益を判断できません。</p>
               <button className="copy-brief-button" onClick={copyHypothesisBrief}>ブリーフをコピー ↗</button>
               {copyMessage && <p className="copy-message" role="status">{copyMessage}</p>}
+              {copyFallback && <textarea className="copy-fallback" value={copyFallback} readOnly rows={8} aria-label="コピー用ブリーフ本文" onFocus={(event) => event.currentTarget.select()} /> }
             </> : <div className="output-empty"><span className="output-empty-icon">↗</span><p className="eyebrow">YOUR NEXT EXPERIMENT</p><h3>観測を、検証できる問いに変える。</h3><p>ジャンルと対象ユーザー、解決したい課題を入力すると、参照元付きの調査ブリーフを作成します。</p><div className="empty-step"><span>01</span>課題の強さを確認する</div><div className="empty-step"><span>02</span>支払い意思を確認する</div><div className="empty-step"><span>03</span>小さな実験で判断する</div></div>}
           </div>
         </div>
