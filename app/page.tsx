@@ -38,6 +38,25 @@ type MarketResponse = {
   limitations: string[];
 };
 
+type HypothesisBrief = {
+  category: string;
+  target: string;
+  problem: string;
+  price: string;
+  observation: string;
+  sources: { label: string; url: string; updatedAt: string | null }[];
+  createdAt: string;
+};
+
+type ResearchDraft = {
+  version: 1;
+  hypothesisCategory: string;
+  hypothesisTarget: string;
+  hypothesisProblem: string;
+  hypothesisPrice: string;
+  hypothesisBrief: HypothesisBrief | null;
+};
+
 function matchesQuery(app: Pick<AppItem, "name" | "developer" | "genres" | "genreAliases">, query: string) {
   const needle = query.trim().toLocaleLowerCase();
   if (!needle) return true;
@@ -70,11 +89,59 @@ export default function HomePage() {
   const [hypothesisError, setHypothesisError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [copyFallback, setCopyFallback] = useState("");
-  const [hypothesisBrief, setHypothesisBrief] = useState<null | {
-    category: string; target: string; problem: string; price: string;
-    observation: string; sources: { label: string; url: string; updatedAt: string | null }[];
-    createdAt: string;
-  }>(null);
+  const [hypothesisBrief, setHypothesisBrief] = useState<HypothesisBrief | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaveStatus, setDraftSaveStatus] = useState("下書きを復元中");
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("app-trend:research-draft:v1");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<ResearchDraft>;
+        if (parsed.version === 1) {
+          if (typeof parsed.hypothesisCategory === "string") setHypothesisCategory(parsed.hypothesisCategory);
+          if (typeof parsed.hypothesisTarget === "string") setHypothesisTarget(parsed.hypothesisTarget);
+          if (typeof parsed.hypothesisProblem === "string") setHypothesisProblem(parsed.hypothesisProblem);
+          if (typeof parsed.hypothesisPrice === "string") setHypothesisPrice(parsed.hypothesisPrice);
+          if (parsed.hypothesisBrief && typeof parsed.hypothesisBrief === "object") {
+            const brief = parsed.hypothesisBrief;
+            if (
+              typeof brief.category === "string" &&
+              typeof brief.target === "string" &&
+              typeof brief.problem === "string" &&
+              typeof brief.price === "string" &&
+              typeof brief.observation === "string" &&
+              typeof brief.createdAt === "string" &&
+              Array.isArray(brief.sources)
+            ) setHypothesisBrief(brief as HypothesisBrief);
+          }
+          setDraftSaveStatus("保存済みの下書きを復元");
+        }
+      }
+    } catch {
+      setDraftSaveStatus("下書きを読み込めませんでした");
+    } finally {
+      setDraftRestored(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftRestored) return;
+    const draft: ResearchDraft = {
+      version: 1,
+      hypothesisCategory,
+      hypothesisTarget,
+      hypothesisProblem,
+      hypothesisPrice,
+      hypothesisBrief,
+    };
+    try {
+      window.localStorage.setItem("app-trend:research-draft:v1", JSON.stringify(draft));
+      setDraftSaveStatus("このブラウザに自動保存済み");
+    } catch {
+      setDraftSaveStatus("自動保存できません。ブリーフをコピーしてください");
+    }
+  }, [draftRestored, hypothesisCategory, hypothesisTarget, hypothesisProblem, hypothesisPrice, hypothesisBrief]);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -368,7 +435,7 @@ export default function HomePage() {
         </div>
         <div className="hypothesis-workbench">
           <div className="hypothesis-form">
-            <div className="workbench-label"><span>RESEARCH WORKBENCH</span><span>HYPOTHESIS / DRAFT</span></div>
+            <div className="workbench-label"><span>RESEARCH WORKBENCH</span><span aria-live="polite">{draftRestored ? draftSaveStatus : "下書きを復元中"}</span></div>
             <label>調査するジャンル
               <select value={hypothesisCategory} onChange={(event) => setHypothesisCategory(event.target.value)} required>
                 <option value="">ジャンルを選択</option>
@@ -388,7 +455,17 @@ export default function HomePage() {
             </label>
             {hypothesisError && <p className="form-error" role="alert">{hypothesisError}</p>}
             <button className="refresh-button workbench-submit" onClick={createHypothesisBrief}>検証ブリーフを作成 ↗</button>
-            <p className="form-footnote">入力内容はこの画面内で処理します。現時点ではアカウントへの保存やクラウド同期はありません。</p>
+            <p className="form-footnote">入力と作成したブリーフは、このブラウザ内に自動保存され、再訪時に復元されます。サーバーには送信せず、別の端末とは同期されません。共有端末では利用後に入力を消してください。</p>
+            <button type="button" className="draft-reset-button" onClick={() => {
+              setHypothesisCategory("");
+              setHypothesisTarget("");
+              setHypothesisProblem("");
+              setHypothesisPrice("月額サブスクリプション");
+              setHypothesisBrief(null);
+              setHypothesisError("");
+              setCopyMessage("");
+              setCopyFallback("");
+            }}>下書きをリセット</button>
           </div>
           <div className="hypothesis-output" aria-live="polite">
             {hypothesisBrief ? <>
