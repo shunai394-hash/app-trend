@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       });
       if (!upstream.ok) throw new Error(`Apple feed HTTP ${upstream.status}`);
       const payload = await upstream.json() as FeedPayload;
-      if (!Array.isArray(payload.feed?.results)) throw new Error("Unexpected Apple feed format");
+      if (!Array.isArray(payload.feed?.results) || payload.feed.results.length === 0) throw new Error("Apple feed was empty or had an unexpected format");
       apps = payload.feed.results;
       sourceUpdatedAt = payload.feed?.updated ?? null;
       status = "ok";
