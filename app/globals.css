@@ -254,3 +254,28 @@ a { text-underline-offset: 3px; }
   .secondary-button, .copy-brief-button, .source-link, .app-info > a,
   .feed-card { transition: none !important; }
 }
+
+
+/* Quality pass 02 — make search recovery immediate and visible */
+.search-control { gap: 10px; }
+.search-control input { flex: 1 1 auto; }
+.search-clear {
+  flex: 0 0 30px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #3b4759;
+  border-radius: 8px;
+  background: #ffffff08;
+  color: #c5cfdd;
+  font-size: 19px;
+  line-height: 1;
+}
+.search-clear:hover { border-color: #c7fa8370; background: #c7fa8312; color: var(--mint); }
+.search-clear:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+@media (max-width: 420px) {
+  .search-control { padding-inline: 9px; gap: 7px; }
+  .search-clear { width: 28px; min-width: 28px; flex-basis: 28px; height: 28px; }
+}
