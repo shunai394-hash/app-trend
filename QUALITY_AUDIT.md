@@ -40,3 +40,12 @@ Target: raise product craft toward Awwwards / Webby Awards / FWA standards. This
 ## Standard used
 
 The Webby Awards evaluate websites and apps across content, navigation, visual design, functionality, interactivity, innovation, and overall experience. A polished visual layer alone is not sufficient. This log tracks engineering findings and remaining evidence gaps; it does not certify award readiness.
+
+
+## Quality pass 11 — operational truthfulness
+
+- **Fixed:** `GET /api/health` no longer returns a green status just because the Next.js route is running.
+- It now checks the server-only Supabase service credentials, queries the latest snapshot-run record with a bounded timeout, and reports database connectivity, snapshot freshness, latest run status, and recorded app count.
+- It returns HTTP 503 with `degraded` when storage is not configured, the database cannot be reached, no snapshot has been recorded, or the latest run is stale/failed. It never returns secret values.
+- **Verification status:** code committed as `f670e2128e60ac774168502c83fce2709e56a1fc`; Vercel deployment started. Awaiting final build status and runtime smoke test.
+- **Still blocked:** no snapshot rows have been confirmed yet. Health reporting makes that failure visible; it does not itself enable or prove the scheduled writer.
