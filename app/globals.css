@@ -305,3 +305,95 @@ a { text-underline-offset: 3px; }
 @media (max-width: 700px) {
   .draft-reset-button { min-height: 40px; }
 }
+
+
+/* Quality pass 13 — make willingness-to-pay validation actionable */
+.validation-plan {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+.validation-plan-step {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: linear-gradient(115deg, #ffffff05, transparent 70%);
+}
+.validation-plan-window {
+  align-self: start;
+  padding-top: 3px;
+  color: var(--mint);
+  font: 9px "DM Mono", monospace;
+  letter-spacing: .04em;
+}
+.validation-plan-step h5 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.validation-plan-step p,
+.pricing-test-box p,
+.decision-rule-box p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.validation-plan-step .validation-plan-evidence {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ffffff12;
+  color: #c7d2df;
+}
+.validation-plan-evidence strong {
+  color: var(--mint);
+  font-weight: 600;
+}
+.pricing-test-box,
+.decision-rule-box {
+  margin-top: 12px;
+  padding: 15px 16px;
+  border-radius: 12px;
+  border: 1px solid #c7fa8330;
+  background: #c7fa8308;
+}
+.pricing-test-box > strong,
+.decision-rule-box > strong {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--mint);
+  font-size: 11px;
+}
+.decision-rule-box {
+  border-color: #a8b8ff38;
+  background: #a8b8ff08;
+}
+.decision-rule-box > strong {
+  color: var(--blue);
+}
+.decision-rule-box small {
+  display: block;
+  margin-top: 8px;
+  color: var(--soft);
+  font-size: 10px;
+  line-height: 1.75;
+}
+@media (max-width: 560px) {
+  .validation-plan-step {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 13px;
+  }
+  .validation-plan-window {
+    font-size: 9px;
+  }
+  .pricing-test-box,
+  .decision-rule-box {
+    padding: 13px;
+  }
+}
