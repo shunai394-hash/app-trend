@@ -241,16 +241,16 @@ export default function HomePage() {
           <div className="control-group">
             <span className="control-label">MARKET</span>
             <div className="segmented" role="group" aria-label="国を選択">
-              <button className={country === "all" ? "selected" : ""} onClick={() => setCountry("all")}>両市場</button>
-              <button className={country === "us" ? "selected" : ""} onClick={() => setCountry("us")}>🇺🇸 米国</button>
-              <button className={country === "jp" ? "selected" : ""} onClick={() => setCountry("jp")}>🇯🇵 日本</button>
+              <button type="button" aria-pressed={country === "all"} className={country === "all" ? "selected" : ""} onClick={() => setCountry("all")}>両市場</button>
+              <button type="button" aria-pressed={country === "us"} className={country === "us" ? "selected" : ""} onClick={() => setCountry("us")}>🇺🇸 米国</button>
+              <button type="button" aria-pressed={country === "jp"} className={country === "jp" ? "selected" : ""} onClick={() => setCountry("jp")}>🇯🇵 日本</button>
             </div>
           </div>
           <div className="control-group">
             <span className="control-label">CHART TYPE</span>
             <div className="segmented" role="group" aria-label="チャート種別">
-              <button className={chart === "top-free" ? "selected" : ""} onClick={() => setChart("top-free")}>無料ランキング</button>
-              <button className={chart === "top-paid" ? "selected" : ""} onClick={() => setChart("top-paid")}>有料ランキング</button>
+              <button type="button" aria-pressed={chart === "top-free"} className={chart === "top-free" ? "selected" : ""} onClick={() => setChart("top-free")}>無料ランキング</button>
+              <button type="button" aria-pressed={chart === "top-paid"} className={chart === "top-paid" ? "selected" : ""} onClick={() => setChart("top-paid")}>有料ランキング</button>
             </div>
           </div>
           <label className="search-control"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="アプリ名・開発元・カテゴリを検索" aria-label="アプリ名・開発元・カテゴリを検索" /><kbd>検索</kbd></label>
