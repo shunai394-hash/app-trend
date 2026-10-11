@@ -141,7 +141,9 @@ export default function HomePage() {
 
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
   const liveCount = visibleFeeds.reduce((sum, feed) => sum + feed.apps.length, 0);
-  const hasAnyFeed = feeds.some((feed) => feed.status === "ok");
+  const successfulFeeds = feeds.filter((feed) => feed.status === "ok").length;
+  const hasAnyFeed = successfulFeeds > 0;
+  const feedStatusLabel = data === null ? "CHECKING SOURCES" : successfulFeeds === data.totalFeeds ? "ALL SOURCES" : successfulFeeds > 0 ? "PARTIAL DATA" : "SOURCE CHECK";
 
   const createHypothesisBrief = () => {
     const target = hypothesisTarget.trim();
@@ -201,8 +203,8 @@ export default function HomePage() {
           <a href="#method">Methodology</a>
           <a href="/history">Rank history</a>
         </nav>
-        <span className={hasAnyFeed ? "status-pill is-live" : "status-pill"}>
-          <span className="status-dot" />{hasAnyFeed ? "LIVE SOURCE" : "SOURCE CHECK"}
+        <span className={data && successfulFeeds === data.totalFeeds ? "status-pill is-live" : "status-pill"} aria-live="polite" aria-label={`データソース状態：${feedStatusLabel}`}>
+          <span className="status-dot" />{feedStatusLabel}
         </span>
       </header>
 
@@ -299,7 +301,7 @@ export default function HomePage() {
             </section>
           ))}
         </div>
-        {!loading && visibleFeeds.length > 0 && liveCount === 0 && !error && <p className="empty-state">この条件のランキングはまだありません。国・チャートを切り替えてください。</p>}
+        {!loading && visibleFeeds.length > 0 && visibleApps.length === 0 && !error && <p className="empty-state" role="status">{query.trim() ? "検索条件に一致するアプリがありません。検索語を短くするか、検索条件を見直してください。" : "この条件のランキングはまだありません。国・チャートを切り替えてください。"}</p>}
         {loading && !data && <div className="loading-state"><span className="loading-orb" />Appleの公開チャートを取得しています…</div>}
       </section>
 
