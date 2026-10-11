@@ -279,3 +279,29 @@ a { text-underline-offset: 3px; }
   .search-control { padding-inline: 9px; gap: 7px; }
   .search-clear { width: 28px; min-width: 28px; flex-basis: 28px; height: 28px; }
 }
+
+
+/* Quality pass 12 — make local draft recovery discoverable and keyboard-friendly */
+.draft-reset-button {
+  align-self: flex-start;
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 0 11px;
+  border: 1px solid #465367;
+  border-radius: 8px;
+  background: transparent;
+  color: #b7c2d1;
+  font-size: 10px;
+}
+.draft-reset-button:hover {
+  border-color: #ffb0b466;
+  color: #ffd0d2;
+  background: #ff9a9f0a;
+}
+.draft-reset-button:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .draft-reset-button { min-height: 40px; }
+}
