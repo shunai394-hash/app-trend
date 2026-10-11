@@ -199,6 +199,7 @@ export default function HomePage() {
           <a className="nav-current" href="#radar">Market radar</a>
           <a href="#signals">Signals</a>
           <a href="#method">Methodology</a>
+          <a href="/history">Rank history</a>
         </nav>
         <span className={hasAnyFeed ? "status-pill is-live" : "status-pill"}>
           <span className="status-dot" />{hasAnyFeed ? "LIVE SOURCE" : "SOURCE CHECK"}
