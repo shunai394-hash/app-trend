@@ -59,3 +59,15 @@ The Webby Awards evaluate websites and apps across content, navigation, visual d
 - Added keyboard-visible focus, touch-sized reset control on mobile, and a restrained destructive-action hover state.
 - **Verification:** Vercel build reached `READY` for commit `8cd09407f52b0b06f89925f18bac93fbce07ca66`. Runtime smoke checks: homepage 200, `/api/market` 200 with 4/4 feeds, `/history` 200. Health correctly reports Preview as degraded because writer secrets are not present there.
 - **Not yet verified:** actual browser interaction / reload restoration, production Cron execution, and persistent rows. A server-rendered fetch cannot prove client-side storage behavior.
+
+
+## Quality pass 13 — prove willingness to pay before building more
+
+- **Added:** a generated seven-day validation plan based on the user's selected audience, pain point, and revenue model.
+- The plan gives concrete work for review mining, customer interviews, a price-visible test, and recording meaningful actions (inquiries, reservations, paid pilots, actual payments) rather than relying on page views.
+- Revenue-model guidance changes for B2B licensing, usage-based pricing, freemium, undecided pricing, and other paid models.
+- The brief now exports the plan and an explicit continue/revise decision gate with the copy action.
+- Thresholds are labelled as early-stage heuristics, not statistically proven demand or a promise of revenue.
+- Added unit tests for plan structure, B2B price validation, and undecided pricing. CI now runs tests before production build and uses Node 22 to support the repository's native TypeScript test runner.
+- **Verification status at log update:** the Vercel deployment for the feature code reached READY at commit `a73041ace0e7f6142af0bbf247bf30b2fc6daa70`; the newest CI configuration commit `a396653408734ce9b122dc104e92b3458d37ecac` is still building. GitHub Actions result for the new tests has not yet been returned.
+- **Still blocked:** this is a local planning workflow, not actual review mining or measured willingness-to-pay data. No saved cloud workspaces, subscription checkout, global store data, or verified snapshot automation have been added by this pass.
