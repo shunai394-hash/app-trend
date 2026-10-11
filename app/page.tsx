@@ -140,9 +140,7 @@ export default function HomePage() {
   }, [feeds, chart]);
 
   const successfulVisible = visibleFeeds.filter((feed) => feed.status === "ok").length;
-  const liveCount = visibleFeeds.reduce((sum, feed) => sum + feed.apps.length, 0);
   const successfulFeeds = feeds.filter((feed) => feed.status === "ok").length;
-  const hasAnyFeed = successfulFeeds > 0;
   const feedStatusLabel = data === null ? "CHECKING SOURCES" : successfulFeeds === data.totalFeeds ? "ALL SOURCES" : successfulFeeds > 0 ? "PARTIAL DATA" : "SOURCE CHECK";
 
   const createHypothesisBrief = () => {
