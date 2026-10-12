@@ -20,18 +20,36 @@ function response(status: number, body: Record<string, unknown>) {
 }
 
 async function fetchAppleSnapshot(url: string) {
-  // Retry one transient timeout/network/5xx failure. The second attempt is uncached
-  // so a stale cached failure cannot hide a recovered upstream feed.
+  // Retry one transient timeout/network/5xx failure. For 429, respect a short
+  // Retry-After window; do not hammer a source that asks for a longer cooldown.
   try {
     const first = await fetch(url, {
       headers: { accept: "application/json" },
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
-    if (first.status < 500) return first;
+
+    if (first.status === 429) {
+      const retryAfter = first.headers.get("retry-after");
+      const retryAfterSeconds = retryAfter ? Number(retryAfter) : Number.NaN;
+      const retryAfterDate = retryAfter && !Number.isFinite(retryAfterSeconds)
+        ? Date.parse(retryAfter)
+        : Number.NaN;
+      const delayMs = Number.isFinite(retryAfterSeconds)
+        ? retryAfterSeconds * 1000
+        : Number.isFinite(retryAfterDate)
+          ? retryAfterDate - Date.now()
+          : 500;
+
+      if (delayMs < 0 || delayMs > 1500) return first;
+      await new Promise((resolve) => setTimeout(resolve, Math.max(250, delayMs)));
+    } else if (first.status < 500) {
+      return first;
+    }
   } catch {
     // One bounded retry below; a failing source must not block the other three.
   }
+
   return fetch(url, {
     headers: { accept: "application/json" },
     cache: "no-store",
