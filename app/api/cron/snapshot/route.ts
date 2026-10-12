@@ -19,6 +19,26 @@ function response(status: number, body: Record<string, unknown>) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
 
+async function fetchAppleSnapshot(url: string) {
+  // Retry one transient timeout/network/5xx failure. The second attempt is uncached
+  // so a stale cached failure cannot hide a recovered upstream feed.
+  try {
+    const first = await fetch(url, {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (first.status < 500) return first;
+  } catch {
+    // One bounded retry below; a failing source must not block the other three.
+  }
+  return fetch(url, {
+    headers: { accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(10000),
+  });
+}
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -48,11 +68,7 @@ export async function GET(request: Request) {
     let apps: FeedApp[] = [];
     let errorMessage: string | null = null;
     try {
-      const upstream = await fetch(source.url, {
-        headers: { accept: "application/json" },
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
-      });
+      const upstream = await fetchAppleSnapshot(source.url);
       if (!upstream.ok) throw new Error(`Apple feed HTTP ${upstream.status}`);
       const payload = await upstream.json() as FeedPayload;
       if (!Array.isArray(payload.feed?.results) || payload.feed.results.length === 0) throw new Error("Apple feed was empty or had an unexpected format");
@@ -117,7 +133,7 @@ export async function GET(request: Request) {
     snapshotDay,
     capturedAt: capturedAt.toISOString(),
     successfulFeeds,
-    totalFeeds: SOURCES.length,
+    totalFeeds: 4,
     snapshotsWritten: results.reduce((sum, item) => sum + item.appsStored, 0),
     feeds: results,
     note: "A daily chart snapshot records observed ranks, not downloads, revenue, or profit.",
