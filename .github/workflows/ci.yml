@@ -1,0 +1,36 @@
+name: App Trend CI
+
+on:
+  pull_request:
+    branches: [main, product/live-market-data-mvp]
+  push:
+    branches: [main, product/live-market-data-mvp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-trend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Verify scheduled automation config
+        run: npm run check:cron
+      - name: Build
+        run: npm run build
