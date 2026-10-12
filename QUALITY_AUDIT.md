@@ -81,3 +81,12 @@ The Webby Awards evaluate websites and apps across content, navigation, visual d
 - **Verification still pending for this commit:** wait for GitHub Actions and the new Vercel Preview deployment, then run endpoint smoke checks.
 - **Operational blocker remains:** the latest Supabase inspection still reports zero rows in both `market_snapshot_runs` and `market_snapshots`. Vercel Cron runs only on Production deployments, not Preview deployments ([Vercel Cron quickstart](https://examples.vercel.com/docs/cron-jobs/quickstart)). The current branch's deployment target is Preview and PR #2 is still a draft; do not claim the automated data pipeline is live until a Production deployment is authorized and a successful stored run is observed.
 - **Security follow-up:** Supabase still flags leaked-password protection as disabled. This needs an explicit Auth setting change and verification.
+
+
+## Quality pass 15 — tolerate transient upstream delays in scheduled collection
+
+- **Observed:** a live Preview smoke check on 2026-10-13 returned HTTP 200 from `/api/market`, but only 3 of 4 chart feeds succeeded; the US free chart timed out. This is correctly exposed as partial data, not a false all-clear.
+- **Fixed in code:** `/api/cron/snapshot` now retries a failed Apple request once with a bounded 10-second timeout before recording the feed as failed. It retries timeout/network failures and HTTP 5xx, but does not retry ordinary 4xx responses.
+- **Why:** transient upstream latency should not unnecessarily erase an entire chart from that day's historical capture. A failed feed still remains an explicit error and is never treated as an empty market.
+- **Verification:** CI run [38180037996](https://github.com/shunai394-hash/app-trend/actions/runs/38180037996) passed install, lint, unit tests, cron-configuration check, and build for the cron-guard changes. The retry code is a newer commit and requires its own CI and Preview deployment check before it is considered verified.
+- **Still blocked:** live history API returns `captureConfigured: false`, `count: 0`; both Supabase history tables still contain zero rows. Retry logic improves resilience but does not activate Production Cron or prove writes. Production deployment and one successful four-feed persisted run are still required.
