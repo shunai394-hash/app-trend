@@ -65,3 +65,18 @@ npm start
 - [ ] Test historical rank calculations against known synthetic snapshots and a partial-feed outage.
 - [ ] Expand the hypothesis workflow with review, keyword-demand, competitor pricing, and willingness-to-pay evidence; current briefs use chart observations plus user-entered assumptions.
 - [ ] Decide web-only vs iOS/Android release target before native packaging.
+
+
+## Agent Forge planner (preview)
+
+The Agent Forge home screen can request a structured plan from `POST /api/agents/plan`.
+This endpoint only generates a plan; it does not run research tools, execute code, deploy, or perform external side effects.
+
+Configure these environment variables on the server only:
+
+- `AGENT_RUNTIME_ENABLED=true` to explicitly enable provider calls (default is disabled).
+- `AGENT_PROVIDER_BASE_URL` to the base URL of an OpenAI-compatible chat-completions API, without the trailing `/chat/completions`.
+- `AGENT_PROVIDER_API_KEY` to the provider secret. Never expose this with a `NEXT_PUBLIC_` prefix.
+- `AGENT_PROVIDER_MODEL` to the provider's model identifier.
+
+Start with `AGENT_RUNTIME_ENABLED=false`. Before enabling public usage, add durable per-account authentication, shared rate limiting, usage/cost accounting, and a budget cap. The current in-memory request limiter is only a basic per-instance safeguard and is not a substitute for those controls. Provider responses are schema-validated; invalid plans are rejected rather than presented as successful.
