@@ -61,7 +61,7 @@ export default function HomePage() {
   return (
     <main className="forge-shell">
       <aside className="forge-sidebar">
-        <Link className="forge-brand" href="/" aria-label="Agent Forge ホーム"><span className="forge-mark">✳</span><span>AGENT<span className="forge-brand-muted">FORGE</span><small>AI WORKFLOW STUDIO</small></span></a>
+        <Link className="forge-brand" href="/" aria-label="Agent Forge ホーム"><span className="forge-mark">✳</span><span>AGENT<span className="forge-brand-muted">FORGE</span><small>AI WORKFLOW STUDIO</small></span></Link>
         <div className="forge-workspace"><i /> App Trend workspace <span>⌄</span></div>
         <div className="forge-nav-label">WORKSPACE</div>
         {([["overview", "▦", "概要"], ["agents", "◈", "エージェント"], ["workflows", "⌘", "ワークフロー"], ["runs", "▷", "実行履歴"]] as const).map(([id, icon, label]) =>
