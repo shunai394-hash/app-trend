@@ -27,25 +27,32 @@ export default function HomePage() {
   const [goal, setGoal] = useState("AIエージェントチームで市場調査から成果物作成、品質検証までを自動化する");
   const [plan, setPlan] = useState<Record<string, unknown> | null>(null);
   const [notice, setNotice] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false);\n  const [isGenerating, setIsGenerating] = useState(false);
 
-  function createPlan() {
+  async function createPlan() {
     if (!goal.trim()) { setNotice("達成したい目標を入力してください。"); return; }
+    setIsGenerating(true);
     setCopied(false);
-    setPlan({
-      goal: goal.trim(),
-      status: "draft_only_no_ai_execution",
-      generatedAt: new Date().toISOString(),
-      steps: [
-        { agent: "Orchestrator", task: "目標を要件・制約・成功指標に分解する" },
-        { agent: "Researcher", task: "必要な根拠と情報源を収集し、不確実性を記録する" },
-        { agent: "Builder", task: "承認された仕様から成果物を作成する" },
-        { agent: "QA Reviewer", task: "受け入れ基準に沿って独立検証し、不合格なら差し戻す" },
-        { agent: "Human approval", task: "外部公開・削除・課金などの副作用を承認する" },
-      ],
-      guardrails: ["ツール権限は最小限に制限", "実行時間と再試行回数に上限を設定", "各工程の結果とエラーを記録", "完了条件未達の成果物を成功扱いしない"],
-    });
-    setNotice("計画の下書きを作成しました。実際のAI実行はまだ接続されていません。");
+    setPlan(null);
+    setNotice("サーバー側のAIプロバイダーに接続して計画を生成しています…");
+    try {
+      const response = await fetch("/api/agents/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: goal.trim() }),
+      });
+      const result = await response.json() as { plan?: Record<string, unknown>; error?: string; executionStarted?: boolean };
+      if (!response.ok || !result.plan) {
+        setNotice(result.error || "計画を生成できませんでした。サーバー設定を確認してください。");
+        return;
+      }
+      setPlan(result.plan);
+      setNotice("AIが計画案を生成しました。これは実行前の下書きで、外部タスクはまだ実行されていません。");
+    } catch {
+      setNotice("計画サービスに接続できませんでした。時間をおいて再試行してください。");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   async function copyPlan() {
@@ -74,7 +81,7 @@ export default function HomePage() {
       </aside>
 
       <section className="forge-main">
-        <header className="forge-topbar"><div><span>App Trend / </span><b>{pageTitles[view] ?? "概要"}</b></div><div className="forge-top-actions"><span className="forge-status"><i /> プロトタイプ</span><button className="forge-help" aria-label="状態について" onClick={() => setNotice("画面は初期プロトタイプです。モデル、データベース、実タスク実行はまだ接続されていません。")}>?</button></div></header>
+        <header className="forge-topbar"><div><span>App Trend / </span><b>{pageTitles[view] ?? "概要"}</b></div><div className="forge-top-actions"><span className="forge-status"><i /> プロトタイプ</span><button className="forge-help" aria-label="状態について" onClick={() => setNotice("AI計画APIは実装済みですが、サーバー側プロバイダー設定が必要です。実タスク実行・永続ログは未接続です。")}>?</button></div></header>
         <div className="forge-content">
           <div className="forge-eyebrow"><i /> AI AGENT ORCHESTRATION PLATFORM <span>PREVIEW · v0.2</span></div>
           <section className="forge-hero"><div><h1>アイデアを、<br /><em>動くワークフロー</em>へ。</h1><p>目的を伝えるだけで、役割・プロンプト・実行フロー・品質基準まで。<br className="forge-desktop-break" />設計から検証までを一つの場所で管理するAIエージェントスタジオ。</p></div><div className="forge-orbit" aria-hidden="true"><div className="forge-orbit-ring ring-one" /><div className="forge-orbit-ring ring-two" /><div className="forge-orbit-core">✳</div><span className="orbit-node node-one">◎</span><span className="orbit-node node-two">⌘</span><span className="orbit-node node-three">✓</span><span className="orbit-node node-four">✦</span></div></section>
@@ -89,11 +96,11 @@ export default function HomePage() {
               <article><span>品質ゲート</span><strong>設計中</strong><small>自動評価は次の段階</small></article>
             </section>
             <div className="forge-grid">
-              <section className="forge-panel"><div className="forge-panel-head"><div><span className="forge-kicker">START WITH A GOAL</span><h2>何を達成しますか？</h2></div><span className="forge-spark">✳</span></div><p className="forge-sub">目標から必要な担当と実行順序を組み立て、計画の下書きを作成します。</p>
+              <section className="forge-panel"><div className="forge-panel-head"><div><span className="forge-kicker">START WITH A GOAL</span><h2>何を達成しますか？</h2></div><span className="forge-spark">✳</span></div><p className="forge-sub">目標をサーバー側のAIで分析し、担当・成果物・受け入れ条件を含む計画案を生成します。</p>
                 <label htmlFor="forge-goal">達成したいこと</label><textarea id="forge-goal" className="forge-goal" maxLength={2000} value={goal} onChange={e => setGoal(e.target.value)} placeholder="達成したい目標を具体的に入力..." />
                 <div className="forge-chips">{SUGGESTIONS.map(s => <button key={s.label} onClick={() => setGoal(s.value)}>{s.label}</button>)}</div>
-                <button className="forge-primary" onClick={createPlan}>実行計画の下書きを作成 <span>↗</span></button>
-                <p className="forge-hint">現時点では計画のプレビューです。モデル呼び出しや外部ツール実行は行いません。</p>
+                <button className="forge-primary" onClick={createPlan} disabled={isGenerating}>{isGenerating ? "AIが計画を生成中…" : "AIで実行計画を生成"} <span>{isGenerating ? "…" : "↗"}</span></button>
+                <p className="forge-hint">AI計画の生成にはサーバー側プロバイダー設定が必要です。計画生成後も外部ツールやタスクの実行は行いません。</p>
                 {plan && <div className="forge-plan" aria-live="polite"><b>✓ 実行計画の下書き</b><pre>{JSON.stringify(plan, null, 2)}</pre><button onClick={copyPlan}>{copied ? "コピー済み ✓" : "計画をコピー"}</button></div>}
               </section>
               <section className="forge-panel"><div className="forge-panel-head"><div><span className="forge-kicker">WORKFLOW PREVIEW</span><h2>実行フロー</h2></div><span className="forge-tag">サンプル</span></div><p className="forge-sub">人間の承認と品質ゲートを含む標準パターン</p>
