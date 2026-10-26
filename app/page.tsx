@@ -27,7 +27,8 @@ export default function HomePage() {
   const [goal, setGoal] = useState("AIエージェントチームで市場調査から成果物作成、品質検証までを自動化する");
   const [plan, setPlan] = useState<Record<string, unknown> | null>(null);
   const [notice, setNotice] = useState("");
-  const [copied, setCopied] = useState(false);\n  const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   async function createPlan() {
     if (!goal.trim()) { setNotice("達成したい目標を入力してください。"); return; }
